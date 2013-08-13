@@ -1,0 +1,5 @@
+# Django<1.6
+# pip install Django<1.6
+
+mysql-python
+django-annoying>=0.7.7

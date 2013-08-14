@@ -1,9 +1,46 @@
 {% extends "base.html" %}
+{% block javascript %}
+<script>
+    var schedules = jQuery.parseJSON('{{ schedules|safe  }}');
+</script>
+<script src="/static/js/home.js"></script>
+{% endblock %}
+
 {% block content %}
+<table class="table-bordered text-center">
+    <tr>
+        <td>Кабинет</td>
+        {% for date in dates %}
+            <td class="">
+                {{ date }}<br>
+                {{ date|date:"l" }}
+            </td>
+        {% endfor %}
+    </tr>
 
-<table>
-
-
+    {% for office in offices %}
+        <tr>
+            <td colspan="100%">{{ office.name }}</td>
+        </tr>
+        {% for room in office.rooms %}
+            <tr>
+                <td>{{ room.name }}</td>
+                {% for date in dates %}
+                    <td class="room-box">
+                        <table class="table-bordered full-width">
+                            {% for hour_range in hours %}
+                                <tr>
+                                    {% for hour in hour_range %}
+                                        <td id="room-hour_{{ room.pk }}_{{ date|date:"dmY" }}_{{ hour }}" ng-click="openDialog()">{{ hour }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    {% endfor %}
 </table>
 
 

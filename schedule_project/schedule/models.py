@@ -2,9 +2,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.contrib.contenttypes import generic
-from django.contrib.contenttypes.models import ContentType
-
 
 
 class Subject(models.Model):
@@ -44,7 +41,6 @@ class Student(models.Model):
 
 class Office(models.Model):
     name = models.CharField('название', max_length=255)
-    rooms = generic.GenericRelation('Room')
 
     class Meta:
         verbose_name = 'офис'
@@ -56,10 +52,7 @@ class Office(models.Model):
 
 class Room(models.Model):
     name = models.CharField('название', max_length=255)
-    #office = models.ForeignKey(Office, verbose_name='офис')
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey('content_type', 'object_id')
+    office = models.ForeignKey(Office, verbose_name='офис')
 
     class Meta:
         verbose_name = 'кабинет'
@@ -67,3 +60,45 @@ class Room(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class GroupType(models.Model):
+    name = models.CharField('название', max_length=255)
+
+    class Meta:
+        verbose_name = 'тип группы'
+        verbose_name_plural = 'типы группы'
+
+    def __unicode__(self):
+        return self.name
+
+
+class ScheduleSet(models.Model):
+    teacher = models.ForeignKey(Teacher, verbose_name='учитель')
+    room = models.ForeignKey(Room, verbose_name='кабинет')
+    group_type = models.ForeignKey(GroupType, verbose_name='тип группы')
+    date = models.DateTimeField('дата/время')
+    students = models.ManyToManyField(Student, verbose_name='ученики')
+
+    class Meta:
+        verbose_name = 'расписание установленное'
+        verbose_name_plural = 'расписание установленное'
+
+    def __unicode__(self):
+        return self.teacher.name + ' ' + self.room.name
+
+
+class ScheduleRegular(models.Model):
+    teacher = models.ForeignKey(Teacher, verbose_name='учитель')
+    room = models.ForeignKey(Room, verbose_name='кабинет')
+    group_type = models.ForeignKey(GroupType, verbose_name='тип группы')
+    date = models.DateTimeField('дата/время')
+    students = models.ManyToManyField(Student, verbose_name='ученики')
+
+    class Meta:
+        verbose_name = 'расписание постоянное'
+        verbose_name_plural = 'расписание постоянное'
+
+    def __unicode__(self):
+        return self.teacher.name + ' ' + self.room.name
+

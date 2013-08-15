@@ -148,6 +148,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
     'schedule',
+    'weekday_field',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -187,6 +188,8 @@ LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
 
 WORK_TIME = (8, 19)
+TIME_FORMAT = '%H:00'
+DATETIME_FORMAT = '%d.%m.%Y ' + TIME_FORMAT
 
 try:
     LOCAL_SETTINGS

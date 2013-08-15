@@ -10,14 +10,39 @@
     margin: 20px 20px 0 0;
 }
 
-.room-box {
+.schedule-table td.room-box {
     padding: 0;
 }
 
-.full-width {
-    width: 100%;
+.schedule-regular {
+    background-color: lightgrey;
 }
 
-.busy {
+.schedule-set {
     background-color: lightgreen;
+}
+
+.schedule-table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.room-table td {
+    padding: 0;
+    cursor: pointer;
+}
+
+.room-table td:hover {
+    background-color: lightblue;
+}
+
+.room-table {
+    margin: 0;
+}
+
+.room-table, .room-table td {
+    -webkit-border-radius: 0 !important;
+    -moz-border-radius: 0 !important;
+    -o-border-radius: 0 !important;
+    border-radius: 0 !important;
 }

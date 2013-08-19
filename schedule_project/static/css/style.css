@@ -14,11 +14,11 @@
     padding: 0;
 }
 
-.schedule-regular {
+/*.schedule-regular {
     background-color: lightgrey;
-}
+}*/
 
-.schedule-set {
+.schedule-busy {
     background-color: lightgreen;
 }
 
@@ -45,4 +45,8 @@
     -moz-border-radius: 0 !important;
     -o-border-radius: 0 !important;
     border-radius: 0 !important;
+}
+
+.select2-container {
+    width: 200px;
 }

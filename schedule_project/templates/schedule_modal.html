@@ -4,7 +4,8 @@
 <div class="modal-body" ng-switch="free">
     <div ng-switch-when="false">
         Учитель - [[ teacher ]]<br>
-        Тип группы - [[ group_type ]]<br>
+        Тип урока - [[ lesson_type ]]<br>
+        Предмет - [[ subject ]]<br>
         Ученики:
         <ul>
             <li ng-repeat="student in students">[[ student ]]</li>

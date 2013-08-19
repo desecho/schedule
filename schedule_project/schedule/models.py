@@ -82,12 +82,12 @@ class Room(models.Model):
         return self.get_full_name()
 
 
-class GroupType(models.Model):
+class LessonType(models.Model):
     name = models.CharField('название', max_length=255)
 
     class Meta:
-        verbose_name = 'тип группы'
-        verbose_name_plural = 'типы группы'
+        verbose_name = 'тип урока'
+        verbose_name_plural = 'типы урока'
 
     def __unicode__(self):
         return self.name
@@ -96,8 +96,9 @@ class GroupType(models.Model):
 class ScheduleSet(models.Model):
     teacher = models.ForeignKey(Teacher, verbose_name='учитель')
     room = models.ForeignKey(Room, verbose_name='кабинет')
-    group_type = models.ForeignKey(GroupType, verbose_name='тип группы')
+    lesson_type = models.ForeignKey(LessonType, verbose_name='тип урока')
     date = models.DateTimeField('дата/время')
+    subject = models.ForeignKey(Subject, verbose_name='предмет')
     students = models.ManyToManyField(Student, verbose_name='ученики')
 
     class Meta:
@@ -110,9 +111,10 @@ class ScheduleSet(models.Model):
 class ScheduleRegular(models.Model):
     teacher = models.ForeignKey(Teacher, verbose_name='учитель')
     room = models.ForeignKey(Room, verbose_name='кабинет')
-    group_type = models.ForeignKey(GroupType, verbose_name='тип группы')
+    lesson_type = models.ForeignKey(LessonType, verbose_name='тип урока')
     weekday = fields.DayOfTheWeekField('день недели')
     time = models.TimeField('время')
+    subject = models.ForeignKey(Subject, verbose_name='предмет')
     students = models.ManyToManyField(Student, verbose_name='ученики')
 
     class Meta:

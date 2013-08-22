@@ -1,4 +1,4 @@
-from schedule.models import Subject, Teacher, Student, Office, Room, ScheduleSet, ScheduleRegular, LessonType
+from schedule.models import Subject, Teacher, Student, Office, Room, ScheduleSet, ScheduleRegular, LessonType, FreeTime
 from django.contrib import admin
 #from nested_inlines.admin import NestedModelAdmin, NestedTabularInline
 
@@ -16,3 +16,4 @@ admin.site.register(Room)
 admin.site.register(LessonType)
 admin.site.register(ScheduleSet)
 admin.site.register(ScheduleRegular)
+admin.site.register(FreeTime)

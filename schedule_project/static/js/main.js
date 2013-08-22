@@ -16,15 +16,35 @@ function getCookie(name) {
 }
 var csrftoken = getCookie('csrftoken');
 
-function csrfSafeMethod(method) {
-    // these HTTP methods do not require CSRF protection
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-}
-$.ajaxSetup({
-    crossDomain: false, // obviates need for sameOrigin test
-    beforeSend: function(xhr, settings) {
-        if (!csrfSafeMethod(settings.type)) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
+// function csrfSafeMethod(method) {
+//     // these HTTP methods do not require CSRF protection
+//     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+// }
+// $.ajaxSetup({
+//     crossDomain: false, // obviates need for sameOrigin test
+//     beforeSend: function(xhr, settings) {
+//         if (!csrfSafeMethod(settings.type)) {
+//             xhr.setRequestHeader("X-CSRFToken", csrftoken);
+//         }
+//     }
+// });;
+
+Messenger.options = {
+    extraClasses: 'messenger-fixed messenger-on-top messenger-on-right',
+    theme: 'future'
+};
+
+function displayMessage(status, message) {
+    var type;
+    if (status) {
+        type = 'success';
+    } else {
+        type = 'error';
     }
-});;
+    Messenger().post({
+      message: message,
+      type: type,
+      showCloseButton: true,
+      hideAfter: 3
+    });
+}

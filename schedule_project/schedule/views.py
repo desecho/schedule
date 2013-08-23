@@ -52,6 +52,31 @@ def get_schedule(schedule_mode, id):
         schedule = ScheduleRegular
     return schedule.objects.get(pk=id)
 
+def filter_schedule_by_date(schedule, schedule_mode):
+    filters = {}
+    if schedule_mode == '0':
+        filters['date'] = schedule.date
+        schedule_filter = ScheduleSet
+    elif schedule_mode == '1':
+        filters['weekday'] = schedule.weekday
+        filters['time'] = schedule.time
+        schedule_filter = ScheduleRegular
+    return schedule_filter.objects.filter(**filters)
+
+def parse_datetime(date):
+    return datetime.datetime.strptime(date, DATE_HOUR_CODE_FORMAT)
+
+def get_schedule_and_filter_params(schedule_mode, date):
+    filter_params = {}
+    if schedule_mode == '0':
+        filter_params['date'] = date
+        schedule = ScheduleSet
+    elif schedule_mode == '1':
+        filter_params['weekday'] = date.weekday()
+        filter_params['time'] = date.time()
+        schedule = ScheduleRegular
+    return (schedule, filter_params)
+
 @ajax_request
 @login_required
 def ajax_save_schedule(request):
@@ -63,25 +88,14 @@ def ajax_save_schedule(request):
         return n == 0
 
     def is_no_conflicts_edit():
-        filters = {}
-        if schedule_mode == '0':
-            filters['date'] = schedule.date
-            schedule_filter = ScheduleSet
-        elif schedule_mode == '1':
-            filters['weekday'] = schedule.weekday
-            filters['time'] = schedule.time
-            schedule_filter = ScheduleRegular
-        filters['room'] = room
-        n = schedule_filter.objects.filter(**filters).exclude(pk=schedule.pk).count()
+        schedule_filter = filter_schedule_by_date(schedule, schedule_mode)
+        n = schedule_filter.filter(room=room).exclude(pk=schedule.pk).count()
         return n == 0
-
-    def parse_date(date):
-        return datetime.datetime.strptime(date, DATE_HOUR_CODE_FORMAT)
 
     def get_room_and_date(room_hour_code):
         match = re.match('(\d+)_(.+)', room_hour_code)
         room_id = match.group(1)
-        date = parse_date(match.group(2))
+        date = parse_datetime(match.group(2))
         return (room_id, date)
 
     if request.is_ajax() and request.method == 'POST':
@@ -123,20 +137,15 @@ def ajax_save_schedule(request):
                 room_id, date = get_room_and_date(room_hour_code)
                 room = Room.objects.get(pk=room_id)
             else:
-                date = parse_date(hour_code)
+                date = parse_datetime(hour_code)
             data = {
                 'subject': subject,
                 'lesson_type': lesson_type,
                 'teacher': teacher,
                 'room': room,
             }
-            if schedule_mode == '0':
-                data['date'] = date
-                schedule = ScheduleSet
-            elif schedule_mode == '1':
-                data['weekday'] = date.weekday()
-                data['time'] = date.time()
-                schedule = ScheduleRegular
+            schedule, filter_params = get_schedule_and_filter_params(schedule_mode, date)
+            data.update(filter_params)
             if is_no_conflicts_create(dict(data)):
                 schedule = schedule(**data)
                 schedule.save()
@@ -167,22 +176,45 @@ def ajax_teachers_and_students(request):
     }
     return result
 
+def get_available_room_list(schedules):
+    def get_busy_rooms(schedules):
+        busy_rooms = schedules.values_list('room')
+        return [x[0] for x in busy_rooms]
+    busy_rooms = get_busy_rooms(schedules)
+    return [{'id': x.pk, 'name': x.get_full_name()} for x in Room.objects.all() if x.pk not in busy_rooms]
+
+@ajax_request
+@login_required
+def ajax_get_room_list(request):
+    schedule_mode = request.GET.get('schedule_mode', None)
+    hour_code = request.GET.get('hour_code', None)
+    date = parse_datetime(hour_code)
+    schedule, filter_params = get_schedule_and_filter_params(schedule_mode, date)
+    schedules = schedule.objects.filter(**filter_params)
+    return get_available_room_list(schedules)
+
+
 @ajax_request
 @login_required
 def ajax_get_hour_details(request):
+    def get_room_list():
+        current_day_schedules = filter_schedule_by_date(schedule, schedule_mode).exclude(pk=schedule.pk)
+        return get_available_room_list(current_day_schedules)
+
     schedule_mode = request.GET.get('schedule_mode', None)
     schedule_id = request.GET.get('schedule_id', None)
     schedule = get_schedule(schedule_mode, schedule_id)
+
     result = {
         'teacher': {'id': schedule.teacher.pk, 'name': schedule.teacher.get_name()},
         'room': {'id': schedule.room.pk, 'name': schedule.room.get_full_name()},
         'subject': {'id': schedule.subject.pk, 'name': schedule.subject.name},
         'lesson_type': {'id': schedule.lesson_type.pk, 'name': schedule.lesson_type.name},
         'students': create_id_value_list(schedule.students.all()),
-        'schedule_id': schedule.pk
+        'room_list': get_room_list(),
     }
-    return result
 
+    return result
 
 def get_general_schedule(schedule_mode, start_date, end_date):
     if schedule_mode == 'set':
@@ -404,10 +436,6 @@ def teacher_schedule(request, date=None):
         if 'mode' not in request.session:
             request.session['mode'] = 0
 
-    def get_all_rooms():
-        output = [{'id': x.pk, 'name': x.get_full_name()} for x in Room.objects.all()]
-        return json.dumps(output)
-
     initialize_session_values()
     hours = get_generic_hour_range()
     start_date = get_start_date_for_schedule(date)
@@ -416,7 +444,6 @@ def teacher_schedule(request, date=None):
         'hours': hours,
         'dates': get_date_range(start_date),
         'start_dates': get_start_dates(start_date),
-        'rooms': get_all_rooms(), #data for modal form
         'lesson_types': get_all_lesson_types(), #data for modal form
         'subjects': get_all_subjects(), #data for modal form
     }

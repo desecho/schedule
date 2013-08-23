@@ -1,29 +1,7 @@
-angular.module('teachersAndStudents', ['ngResource']).
-  factory('TeachersAndStudents', function($resource) {
-    return $resource('/teachers-and-students/', {}, {
-      get: {method: 'GET'}
-    });
-  });
-
-angular.module('scheduleDelete', ['ngResource']).
-  factory('ScheduleDelete', function($resource) {
-    return $resource('/delete-schedule/', {}, {
-      post: {method: 'POST', headers: headers}
-    });
-  });
-
-angular.module('scheduleSave', ['ngResource']).
-  factory('ScheduleSave', function($resource) {
-    return $resource('/save-schedule/', {}, {
-      post: {method: 'POST', headers: headers}
-    });
-  });
-
-
-  angular.module('saveSettings', ['ngResource']).
-  factory('Settings', function($resource) {
-    return $resource('/apply-settings/', {}, {
-      post: {method: 'POST', headers: headers}
+angular.module('roomList', ['ngResource']).
+  factory('RoomList', function($resource) {
+    return $resource('/get-room-list/', {}, {
+      get: {method: 'GET', isArray: true}
     });
   });
 
@@ -36,7 +14,8 @@ angular.module('scheduleTeacher', ['ngResource']).
 
 var App = angular.module('schedule', ['ui.bootstrap', 'ui.select2',
                                       'scheduleTeacher', 'saveSettings', 'hourDetails',
-                                      'teachersAndStudents', 'scheduleSave', 'scheduleDelete']);
+                                      'teachersAndStudents', 'scheduleSave', 'scheduleDelete',
+                                      'roomList']);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -132,7 +111,7 @@ function ScheduleController($scope, $dialog, Schedule, Settings) {
 
 }
 
-function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete){
+function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, RoomList, ScheduleSave, ScheduleDelete){
   function get_date(code){
     var pattern = /(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
@@ -176,10 +155,21 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
       $scope.room = data.room;
       $scope.lesson_type = data.lesson_type;
       $scope.students = data.students;
-      $scope.schedule_id = data.schedule_id;
+      $scope.room_list = data.room_list;
       $scope.fields.subject = $scope.subject.id;
       $scope.fields.lesson_type = $scope.lesson_type.id;
       $scope.fields.room = $scope.room.id;
+    });
+  };
+
+  $scope.load_room_list = function() {
+    var params = {
+      schedule_mode: schedule_mode,
+      hour_code: hour_code,
+    };
+
+    RoomList.get(params, function (data) {
+      $scope.room_list = data;
     });
   };
 
@@ -192,8 +182,8 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
       room: $scope.fields.room,
       schedule_mode: schedule_mode,
     };
-    if (typeof $scope.schedule_id !== 'undefined') {
-      params['schedule_id'] = $scope.schedule_id;
+    if (typeof schedule_id !== 'undefined') {
+      params['schedule_id'] = schedule_id;
     } else {
       params['hour_code'] = hour_code;
     }
@@ -215,7 +205,7 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
 
   $scope.delete = function() {
     params = {
-      schedule_id: $scope.schedule_id,
+      schedule_id: schedule_id,
       schedule_mode: schedule_mode,
     };
     ScheduleDelete.post($.param(params), function (data) {
@@ -232,11 +222,12 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
   $scope.reload = false;
   $scope.free = free;
   $scope.mode = 'view';
-  if (!$scope.free){
+  if ($scope.free){
+    $scope.load_room_list();
+  } else {
     $scope.load();
   }
   $scope.date = get_date(hour_code);
   $scope.subjects = subjects;
   $scope.lesson_types = lesson_types;
-  $scope.rooms = rooms;
 }

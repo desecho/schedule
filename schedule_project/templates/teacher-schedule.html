@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block javascript %}
 <script>
-    var rooms = jQuery.parseJSON('{{ rooms|safe  }}');
     var subjects = jQuery.parseJSON('{{ subjects|safe  }}');
     var lesson_types = jQuery.parseJSON('{{ lesson_types|safe  }}');
     var start_date_prev = '{{ start_dates.0|date:"d-m-Y" }}';

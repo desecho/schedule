@@ -1,35 +1,7 @@
-angular.module('teachersAndStudents', ['ngResource']).
-  factory('TeachersAndStudents', function($resource) {
-    return $resource('/teachers-and-students/', {}, {
-      get: {method: 'GET'}
-    });
-  });
-
 angular.module('scheduleAdmin', ['ngResource']).
   factory('Schedule', function($resource) {
     return $resource('/load-admin-schedule/' + start_date_current, {}, {
       get: {method: 'GET'}
-    });
-  });
-
-angular.module('saveSettings', ['ngResource']).
-  factory('Settings', function($resource) {
-    return $resource('/apply-settings/', {}, {
-      post: {method: 'POST', headers: headers}
-    });
-  });
-
-angular.module('scheduleDelete', ['ngResource']).
-  factory('ScheduleDelete', function($resource) {
-    return $resource('/delete-schedule/', {}, {
-      post: {method: 'POST', headers: headers}
-    });
-  });
-
-angular.module('scheduleSave', ['ngResource']).
-  factory('ScheduleSave', function($resource) {
-    return $resource('/save-schedule/', {}, {
-      post: {method: 'POST', headers: headers}
     });
   });
 
@@ -232,7 +204,6 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
       $scope.subject = data.subject;
       $scope.lesson_type = data.lesson_type;
       $scope.students = data.students;
-      $scope.schedule_id = data.schedule_id;
       $scope.fields.subject = $scope.subject.id;
       $scope.fields.lesson_type = $scope.lesson_type.id;
     });
@@ -246,8 +217,8 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
       teacher: $scope.fields.teacher,
       schedule_mode: schedule_mode,
     };
-    if (typeof $scope.schedule_id !== 'undefined') {
-      params['schedule_id'] = $scope.schedule_id;
+    if (typeof schedule_id !== 'undefined') {
+      params['schedule_id'] = schedule_id;
     } else {
       params['room_hour_code'] = room_hour_code;
     }
@@ -269,7 +240,7 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
 
   $scope.delete = function() {
     params = {
-      schedule_id: $scope.schedule_id,
+      schedule_id: schedule_id,
       schedule_mode: schedule_mode,
     };
     ScheduleDelete.post($.param(params), function (data) {

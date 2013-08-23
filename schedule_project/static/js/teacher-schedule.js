@@ -5,20 +5,6 @@ angular.module('teachersAndStudents', ['ngResource']).
     });
   });
 
-angular.module('scheduleAdmin', ['ngResource']).
-  factory('Schedule', function($resource) {
-    return $resource('/load-admin-schedule/' + start_date_current, {}, {
-      get: {method: 'GET'}
-    });
-  });
-
-angular.module('saveSettings', ['ngResource']).
-  factory('Settings', function($resource) {
-    return $resource('/apply-settings/', {}, {
-      post: {method: 'POST', headers: headers}
-    });
-  });
-
 angular.module('scheduleDelete', ['ngResource']).
   factory('ScheduleDelete', function($resource) {
     return $resource('/delete-schedule/', {}, {
@@ -33,24 +19,30 @@ angular.module('scheduleSave', ['ngResource']).
     });
   });
 
+
+  angular.module('saveSettings', ['ngResource']).
+  factory('Settings', function($resource) {
+    return $resource('/apply-settings/', {}, {
+      post: {method: 'POST', headers: headers}
+    });
+  });
+
+angular.module('scheduleTeacher', ['ngResource']).
+  factory('Schedule', function($resource) {
+    return $resource('/load-teacher-schedule/' + start_date_current, {}, {
+      get: {method: 'GET'}
+    });
+  });
+
 var App = angular.module('schedule', ['ui.bootstrap', 'ui.select2',
-                                      'scheduleAdmin', 'saveSettings',
-                                      'hourDetails', 'teachersAndStudents',
-                                      'scheduleSave', 'scheduleDelete']);
+                                      'scheduleTeacher', 'saveSettings', 'hourDetails',
+                                      'teachersAndStudents', 'scheduleSave', 'scheduleDelete']);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
-}).config(['$routeProvider', function($routeProvider) {
-  $routeProvider.
-    when('/', {action: 'home'}).
-    when('/teacher-:teacher/student-:student/subject-:subject/lesson_type-:lesson_type/', {action: 'filter'}).
-    otherwise({redirectTo: '/'});
-}]);
+});
 
-function ScheduleController($scope, $route, $routeParams, $location, $dialog, Schedule, Settings) {
-
-  var filter_names = ['teacher', 'student', 'subject', 'lesson_type'];
-  $scope.filters = {};
+function ScheduleController($scope, $dialog, Schedule, Settings) {
   $scope.schedule_mode = schedule_mode; //enable set schedule by default
 
   $scope.saveModeSettings = function() {
@@ -64,25 +56,21 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
   $scope.load = function() {
     var params = angular.copy($scope.filters);
     Schedule.get(params, function (data) {
-      $scope.schedule_regular = data.schedule_regular;
       $scope.schedule_set = data.schedule_set;
-      $scope.teachers = data.teachers;
-      $scope.students = data.students;
-      $scope.subjects = data.subjects;
-      $scope.lesson_types = data.lesson_types;
+      $scope.schedule_regular = data.schedule_regular;
       $scope.activateScheduleClasses();
     });
   };
 
   $scope.activateScheduleClasses = function(){
     function resetScheduleClasses(){
-      $('.room-hour').removeClass('schedule-busy');
+      $('.hour').html('');
     }
     resetScheduleClasses();
     var schedule = $scope.getCurrentSchedule();
     $.each(schedule, function(id, value) {
-        var name = '#room-hour_' + id;
-        $(name).addClass('schedule-busy');
+      var name = '#hour_' + id;
+      $(name).html(value['room']);
     });
   };
 
@@ -109,25 +97,27 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
 
   $scope.openDialog = function(event){
     var schedule = $scope.getCurrentSchedule();
-    var room_hour_code = angular.element(event.target).attr('id').replace('room-hour_', '');
+    var hour_code = angular.element(event.target).attr('id').replace('hour_', '');
     var opts = {
       backdrop: true,
       keyboard: true,
       backdropClick: true,
-      templateUrl:  '/admin-schedule-modal',
+      templateUrl:  '/teacher-schedule-modal',
       controller: 'DialogController',
       resolve: {
         free: function(){
-          return !(room_hour_code in schedule);
+          return !(hour_code in schedule);
         },
         schedule_id: function(){
-          return schedule[room_hour_code];
+          if (hour_code in schedule) {
+            return schedule[hour_code]['id'];
+          }
         },
         schedule_mode: function(){
           return angular.copy($scope.schedule_mode);
         },
-        room_hour_code: function(){
-          return angular.copy(room_hour_code);
+        hour_code: function(){
+          return angular.copy(hour_code);
         }
       },
     };
@@ -138,62 +128,15 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
     });
   };
 
-  $scope.reset_filter = function(filter) {
-    if (filter == 'all')
-      $scope.filters = {};
-    else
-      delete $scope.filters[filter];
-    $scope.update_location();
-  };
+  $scope.load();
 
-  $scope.is_filtered = function() {
-    var result = false;
-    for (filter in $scope.filters)
-      if ($scope.filters[filter])
-        result = true;
-    return result;
-  };
-
-  $scope.update_location = function() {
-    if (!$scope.is_filtered()) {
-      $location.path("/");
-      return;
-    }
-
-    var url = "";
-    angular.forEach(filter_names, function(val, key) {
-      url += val + "-" + ($scope.filters[val] || "all") + "/";
-    });
-
-    $location.path(url);
-  };
-
-  $scope.$on(
-    "$routeChangeSuccess",
-    function($currentRoute, $previousRoute) {
-      if ($route.current.action == 'home') {
-        $scope.filters = {};
-        $scope.load();
-      } else if ($route.current.action == 'filter') {
-        angular.forEach(filter_names, function(key, value) {
-          if ($route.current.params[key] !== 'all')
-            $scope.filters[key] = $route.current.params[key];
-          else
-            delete $scope.filters[key];
-        });
-        $scope.load();
-      }
-    }
-  );
 }
 
-function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete){
-  function get_date_room(code){
-    var pattern = /(\d+)_(\d{2})(\d{2})(\d{4})_(\d+)/g;
+function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete){
+  function get_date(code){
+    var pattern = /(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
-    var room_id = match[1];
-    var date = match[2] + '.' + match[3] + '.' + match[4] + ' ' + match[5] + ':00';
-    return [date, room_id];
+    return match[1] + '.' + match[2] + '.' + match[3] + ' ' + match[4] + ':00';
   }
 
   $scope.close = function(){
@@ -230,11 +173,13 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
     HourDetails.get(params, function (data) {
       $scope.teacher = data.teacher;
       $scope.subject = data.subject;
+      $scope.room = data.room;
       $scope.lesson_type = data.lesson_type;
       $scope.students = data.students;
       $scope.schedule_id = data.schedule_id;
       $scope.fields.subject = $scope.subject.id;
       $scope.fields.lesson_type = $scope.lesson_type.id;
+      $scope.fields.room = $scope.room.id;
     });
   };
 
@@ -244,12 +189,13 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
       subject: $scope.fields.subject,
       lesson_type: $scope.fields.lesson_type,
       teacher: $scope.fields.teacher,
+      room: $scope.fields.room,
       schedule_mode: schedule_mode,
     };
     if (typeof $scope.schedule_id !== 'undefined') {
       params['schedule_id'] = $scope.schedule_id;
     } else {
-      params['room_hour_code'] = room_hour_code;
+      params['hour_code'] = hour_code;
     }
     ScheduleSave.post($.param(params), function (data) {
       if (data.success) {
@@ -289,10 +235,8 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
   if (!$scope.free){
     $scope.load();
   }
-  var date_room = get_date_room(room_hour_code);
-  $scope.date = date_room[0];
-  $scope.room_id = date_room[1];
-  $scope.room_name = rooms[$scope.room_id];
+  $scope.date = get_date(hour_code);
   $scope.subjects = subjects;
   $scope.lesson_types = lesson_types;
+  $scope.rooms = rooms;
 }

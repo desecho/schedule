@@ -32,7 +32,11 @@
     cursor: pointer;
 }
 
-.room-table td:hover {
+.hour-table td {
+    cursor: pointer;
+}
+
+.room-table td:hover , .hour-table td:hover{
     background-color: lightblue;
 }
 

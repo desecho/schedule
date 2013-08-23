@@ -48,3 +48,16 @@ function displayMessage(status, message) {
       hideAfter: 3
     });
 }
+
+var headers = {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+        };
+
+angular.module('hourDetails', ['ngResource']).
+  factory('HourDetails', function($resource) {
+    return $resource('/get-hour-details/', {}, {
+      get: {method: 'GET'}
+    });
+  });

@@ -4,13 +4,12 @@
     var rooms = jQuery.parseJSON('{{ rooms|safe  }}');
     var subjects = jQuery.parseJSON('{{ subjects|safe  }}');
     var lesson_types = jQuery.parseJSON('{{ lesson_types|safe  }}');
-    var rooms = jQuery.parseJSON('{{ rooms|safe  }}');
     var start_date_prev = '{{ start_dates.0|date:"d-m-Y" }}';
     var start_date_current = '{{ start_dates.1|date:"d-m-Y" }}';
     var start_date_next = '{{ start_dates.2|date:"d-m-Y" }}';
     var schedule_mode = {{ request.session.mode }};
 </script>
-<script src="/static/js/admin-schedule.js"></script>
+<script src="/static/js/teacher-schedule.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -20,15 +19,15 @@
   <button ng-click="enableRegularSchedule()" ng:class="(schedule_mode == 1)? 'btn active' : 'btn'">Постоянное</button>
 </div>
 <div class="btn-group">
-  <a href="/{{ start_dates.0|date:"d-m-Y" }}" class="btn" >На неделю назад</a>
-  <a href="/" class="btn" >На текущую неделю</a>
-  <a href="/{{ start_dates.2|date:"d-m-Y" }}" class="btn">На неделю вперед</a>
+  <a href="/teacher-schedule/{{ start_dates.0|date:"d-m-Y" }}" class="btn" >На неделю назад</a>
+  <a href="/teacher-schedule" class="btn" >На текущую неделю</a>
+  <a href="/teacher-schedule/{{ start_dates.2|date:"d-m-Y" }}" class="btn">На неделю вперед</a>
 </div>
 <br><br>
 
-<table class="table table-bordered schedule-table">
+<table class="table table-bordered schedule-table hour-table">
     <tr>
-        <td>Кабинет</td>
+        <td>Время</td>
         {% for date in dates %}
             <td>
                 {{ date }}<br>
@@ -36,30 +35,15 @@
             </td>
         {% endfor %}
     </tr>
-
-    {% for office in offices %}
-        <tr>
-            <td colspan="100%">{{ office.name }}</td>
-        </tr>
-        {% for room in office.rooms %}
+        {% for hour in hours %}
             <tr>
-                <td>{{ room.name }}</td>
+                <td>{{ hour }}</td>
                 {% for date in dates %}
-                    <td class="room-box">
-                        <table class="room-table table table-bordered">
-                            {% for hour_range in hours %}
-                                <tr>
-                                    {% for hour in hour_range %}
-                                        <td class="room-hour" id="room-hour_{{ room.pk }}_{{ date|date:"dmY" }}_{{ hour }}" ng-click="openDialog($event)">{{ hour }}</td>
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        </table>
+                    <td class="hour" id="hour_{{ date|date:"dmY" }}_{{ hour }}" ng-click="openDialog($event)">
                     </td>
                 {% endfor %}
             </tr>
         {% endfor %}
-    {% endfor %}
 </table>
 
 {% endblock %}

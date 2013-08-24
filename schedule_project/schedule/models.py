@@ -32,7 +32,7 @@ class Subject(models.Model):
 
 class Teacher(models.Model):
     user = models.OneToOneField(User, verbose_name='учитель')
-    free_time = JSONField('свободное время')
+    free_time = JSONField('свободное время', default='{"0":[],"1":[],"2":[],"3":[],"4":[],"5":[],"6":[]}')
     subjects = models.ManyToManyField(Subject, verbose_name='предметы')
 
     class Meta:

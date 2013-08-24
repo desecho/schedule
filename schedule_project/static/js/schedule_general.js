@@ -26,10 +26,16 @@ angular.module('scheduleSave', ['ngResource']).
     });
   });
 
+angular.module('saveSettings', ['ngResource']).
+factory('Settings', function($resource) {
+  return $resource('/apply-settings/', {}, {
+    post: {method: 'POST', headers: headers}
+  });
+});
 
-  angular.module('saveSettings', ['ngResource']).
-  factory('Settings', function($resource) {
-    return $resource('/apply-settings/', {}, {
-      post: {method: 'POST', headers: headers}
+angular.module('makeRegular', ['ngResource']).
+factory('MakeRegular', function($resource) {
+  return $resource('/make-regular/', {}, {
+      get: {method: 'GET'}
     });
   });

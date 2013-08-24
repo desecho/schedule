@@ -7,22 +7,22 @@
 {% endblock %}
 
 {% block content %}
+<div ng-controller="FreeTimeController">
 
-<table class="table table-bordered schedule-table hour-table">
+<table class="table table-bordered schedule-table hour-table free-time-table">
     <tr>
         <td>Время</td>
-        {% for date in dates %}
+        {% for day in days %}
             <td>
-                {{ date }}<br>
-                {{ date|date:"l" }}
+                {{ day.1 }}
             </td>
         {% endfor %}
     </tr>
         {% for hour in hours %}
             <tr>
                 <td>{{ hour }}</td>
-                {% for date in dates %}
-                    <td class="hour" id="hour_{{ date|date:"dmY" }}_{{ hour }}" ng-click="openDialog($event)">
+                {% for day in days %}
+                    <td class="hour" id="{{ day.0 }}_{{ hour }}" ng-mouseup="mouse_up()" ng-mousedown="mouse_down($event)" ng-mouseover="select_hour($event)">
                     </td>
                 {% endfor %}
             </tr>
@@ -30,9 +30,9 @@
 </table>
 
 <div class="btn-group">
-  <a href="save()" class="btn">Сохранить</a>
-  <a href="reset()" class="btn">Сбросить</a>
+  <button ng-click="save()" class="btn">Сохранить</button>
+  <button ng-click="reset()" class="btn">Сбросить</button>
 </div>
 
-
+</div>
 {% endblock %}

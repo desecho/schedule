@@ -63,6 +63,7 @@
     </div>
   </div>
   <div class="modal-footer">
+    <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">Назначить постоянным</button>
     <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view">Редактировать</button>
     <button ng-click="delete()" ng-hide="free" class="btn btn-primary">Удалить</button>
     <button ng-click="close()" class="btn btn-primary">Закрыть</button>

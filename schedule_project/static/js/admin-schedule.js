@@ -5,10 +5,11 @@ angular.module('scheduleAdmin', ['ngResource']).
     });
   });
 
-var App = angular.module('schedule', ['ngRoute', 'ui.bootstrap', 'ui.select2',
+var App = angular.module('schedule', ['loadingIndicator', 'ngRoute', 'ui.bootstrap', 'ui.select2',
                                       'scheduleAdmin', 'saveSettings',
                                       'hourDetails', 'teachersAndStudents',
-                                      'scheduleSave', 'scheduleDelete', 'loadingIndicator']);
+                                      'scheduleSave', 'scheduleDelete', 'makeRegular',
+                                      ]);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -35,6 +36,20 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
   };
 
   $scope.load = function() {
+    function resetFreeTimeClasses() {
+      $('.room-hour').removeClass('free-hour');
+    }
+
+    function activateFreeTimeClasses(free_time){
+      resetFreeTimeClasses();
+      $.each(free_time, function(key, value){
+        var element = $('#room-hour_' + value);
+        if (!element.hasClass('schedule-busy')) {
+          element.addClass('free-hour');
+        }
+      });
+    }
+
     var params = angular.copy($scope.filters);
     Schedule.get(params, function (data) {
       $scope.schedule_regular = data.schedule_regular;
@@ -44,6 +59,12 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
       $scope.subjects = data.subjects;
       $scope.lesson_types = data.lesson_types;
       $scope.activateScheduleClasses();
+      var free_time = data.free_time;
+      if (free_time) {
+        activateFreeTimeClasses(free_time);
+      } else {
+        resetFreeTimeClasses();
+      }
     });
   };
 
@@ -160,7 +181,7 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
   );
 }
 
-function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete){
+function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete, MakeRegular){
   function get_date_room(code){
     var pattern = /(\d+)_(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
@@ -194,6 +215,22 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
     });
   };
 
+  $scope.makeRegular = function() {
+    var params = {
+      schedule_id: schedule_id,
+    };
+
+    MakeRegular.get(params, function (data) {
+      if (data.success) {
+        $scope.reload = true;
+      } else {
+        displayMessage(false, data.error);
+      }
+    }, function () {
+      displayMessage(false, 'Ошибка назначения расписания в качестве постоянного');
+    });
+  };
+
   $scope.load = function() {
     var params = {
       schedule_mode: schedule_mode,
@@ -208,6 +245,9 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
       $scope.fields.subject = $scope.subject.id;
       $scope.fields.lesson_type = $scope.lesson_type.id;
     });
+  };
+  $scope.is_set_schedule_mode_and_not_empty = function() {
+    return schedule_mode == 0 && !$scope.free;
   };
 
   $scope.save = function() {

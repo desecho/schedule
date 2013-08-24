@@ -5,10 +5,10 @@ angular.module('scheduleAdmin', ['ngResource']).
     });
   });
 
-var App = angular.module('schedule', ['ui.bootstrap', 'ui.select2',
+var App = angular.module('schedule', ['ngRoute', 'ui.bootstrap', 'ui.select2',
                                       'scheduleAdmin', 'saveSettings',
                                       'hourDetails', 'teachersAndStudents',
-                                      'scheduleSave', 'scheduleDelete']);
+                                      'scheduleSave', 'scheduleDelete', 'loadingIndicator']);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -18,6 +18,7 @@ App.config(function($interpolateProvider) {
     when('/teacher-:teacher/student-:student/subject-:subject/lesson_type-:lesson_type/', {action: 'filter'}).
     otherwise({redirectTo: '/'});
 }]);
+
 
 function ScheduleController($scope, $route, $routeParams, $location, $dialog, Schedule, Settings) {
 

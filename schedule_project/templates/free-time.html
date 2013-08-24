@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block javascript %}
+<script>
+
+</script>
+<script src="/static/js/time_selection.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<table class="table table-bordered schedule-table hour-table">
+    <tr>
+        <td>Время</td>
+        {% for date in dates %}
+            <td>
+                {{ date }}<br>
+                {{ date|date:"l" }}
+            </td>
+        {% endfor %}
+    </tr>
+        {% for hour in hours %}
+            <tr>
+                <td>{{ hour }}</td>
+                {% for date in dates %}
+                    <td class="hour" id="hour_{{ date|date:"dmY" }}_{{ hour }}" ng-click="openDialog($event)">
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+</table>
+
+<div class="btn-group">
+  <a href="save()" class="btn">Сохранить</a>
+  <a href="reset()" class="btn">Сбросить</a>
+</div>
+
+
+{% endblock %}

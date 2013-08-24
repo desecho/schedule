@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from annoying.fields import JSONField
 import fields
 
 DAYS_OF_THE_WEEK = (
@@ -31,29 +32,46 @@ class Subject(models.Model):
 
 class Teacher(models.Model):
     user = models.OneToOneField(User, verbose_name='учитель')
+    free_time = JSONField('свободное время')
     subjects = models.ManyToManyField(Subject, verbose_name='предметы')
 
     class Meta:
         verbose_name = 'учитель'
         verbose_name_plural = 'учителя'
 
-    def get_name(self):
+    def get_full_name(self):
         return self.user.get_full_name()
 
     def __unicode__(self):
-        return self.get_name()
+        return self.get_full_name()
 
 
 class Student(models.Model):
     name = models.CharField('имя', max_length=255)
+    last_name = models.CharField('фамилия', max_length=255)
+    middle_name = models.CharField('отчество', max_length=255)
+    phone = models.CharField('телефон', max_length=255)
+    birthday = models.DateField('дата рождения')
+    email = models.EmailField('email', null=True, blank=True)
     subjects = models.ManyToManyField(Subject, verbose_name='предметы')
+    time_preference_priority1 = JSONField('желаемое время. приоритет 1')
+    time_preference_priority2 = JSONField('желаемое время. приоритет 2', null=True, blank=True)
+    passport_number = models.IntegerField('паспорт, серия/номер', max_length=255)
+    passport_authority = models.CharField('паспорт, выдан (кем)', max_length=255)
+    passport_issued_date = models.DateField('паспорт, дата выдачи')
+    passport_unit = models.CharField('паспорт, код подразделения', max_length=255)
+    olympiad_participation_plans = models.BooleanField('планы участия в обл. или межд. олимпиадах, в КДР')
+    foreign_trip_plans = models.BooleanField('планы поездок заграницу')
 
     class Meta:
         verbose_name = 'ученик'
         verbose_name_plural = 'ученики'
 
+    def get_full_name(self):
+        return '%s %s' % (self.name, self.last_name)
+
     def __unicode__(self):
-        return self.name
+        return self.get_full_name()
 
 
 class Office(models.Model):
@@ -120,19 +138,6 @@ class ScheduleRegular(models.Model):
     class Meta:
         verbose_name = 'расписание постоянное'
         verbose_name_plural = 'расписание постоянное'
-
-    def __unicode__(self):
-        return '%s %s - %s' % (get_weekday(self.weekday), self.time.strftime(settings.TIME_FORMAT), self.teacher.get_name())
-
-
-class FreeTime(models.Model):
-    teacher = models.ForeignKey(Teacher, verbose_name='учитель')
-    weekday = fields.DayOfTheWeekField('день недели')
-    time = models.TimeField('время')
-
-    class Meta:
-        verbose_name = 'свободное время'
-        verbose_name_plural = 'свободное время'
 
     def __unicode__(self):
         return '%s %s - %s' % (get_weekday(self.weekday), self.time.strftime(settings.TIME_FORMAT), self.teacher.get_name())

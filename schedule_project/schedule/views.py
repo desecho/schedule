@@ -5,7 +5,7 @@ import json
 import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from schedule.models import Office, Room, ScheduleSet, ScheduleRegular, Teacher, Student, Subject, LessonType
+from schedule.models import Office, Room, ScheduleSet, ScheduleRegular, Teacher, Student, Subject, LessonType, DAYS_OF_THE_WEEK
 from annoying.decorators import ajax_request, render_to
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -19,8 +19,8 @@ DATE_HOUR_CODE_FORMAT = '%d%m%Y_%H'
 def create_id_value_list(input):
     return [{'id': x.pk, 'name': x.name} for x in input]
 
-def create_teachers_id_value_list(input):
-    return [{'id': x.pk, 'name': x.get_name()} for x in input]
+def create_id_value_list_full_name(input):
+    return [{'id': x.pk, 'name': x.get_full_name()} for x in input]
 
 def parse_date(date):
     return datetime.datetime.strptime(date, '%d-%m-%Y').date()
@@ -168,8 +168,8 @@ def ajax_delete_schedule(request):
 @login_required
 def ajax_teachers_and_students(request):
     subject_id = request.GET.get('subject_id', None)
-    teachers = create_teachers_id_value_list(Teacher.objects.filter(subjects__pk=subject_id))
-    students = create_id_value_list(Student.objects.filter(subjects__pk=subject_id))
+    teachers = create_id_value_list_full_name(Teacher.objects.filter(subjects__pk=subject_id))
+    students = create_id_value_list_full_name(Student.objects.filter(subjects__pk=subject_id))
     result = {
         'teachers': teachers,
         'students': students,
@@ -181,7 +181,7 @@ def get_available_room_list(schedules):
         busy_rooms = schedules.values_list('room')
         return [x[0] for x in busy_rooms]
     busy_rooms = get_busy_rooms(schedules)
-    return [{'id': x.pk, 'name': x.get_full_name()} for x in Room.objects.all() if x.pk not in busy_rooms]
+    return [x for x in create_id_value_list_full_name(Room.objects.all()) if x['id'] not in busy_rooms]
 
 @ajax_request
 @login_required
@@ -206,11 +206,11 @@ def ajax_get_hour_details(request):
     schedule = get_schedule(schedule_mode, schedule_id)
 
     result = {
-        'teacher': {'id': schedule.teacher.pk, 'name': schedule.teacher.get_name()},
+        'teacher': {'id': schedule.teacher.pk, 'name': schedule.teacher.get_full_name()},
         'room': {'id': schedule.room.pk, 'name': schedule.room.get_full_name()},
         'subject': {'id': schedule.subject.pk, 'name': schedule.subject.name},
         'lesson_type': {'id': schedule.lesson_type.pk, 'name': schedule.lesson_type.name},
-        'students': create_id_value_list(schedule.students.all()),
+        'students': create_id_value_list_full_name(schedule.students.all()),
         'room_list': get_room_list(),
     }
 
@@ -250,11 +250,11 @@ def ajax_load_admin_schedule(request, date):
 
     def get_teachers_filter():
         teachers = Teacher.objects.filter(**filters_subjects)
-        return create_teachers_id_value_list(teachers)
+        return create_id_value_list_full_name(teachers)
 
     def get_students_filter():
         students = Student.objects.filter(**filters_subjects)
-        return create_id_value_list(students)
+        return create_id_value_list_full_name(students)
 
     def get_lesson_types_filter():
         lesson_types = LessonType.objects.all()
@@ -294,7 +294,6 @@ def ajax_load_admin_schedule(request, date):
     students_filter = get_students_filter()
     subjects_filter = get_subjects_filter()
     lesson_types_filter = get_lesson_types_filter()
-
     result = {
         'schedule_set': schedule_set,
         'schedule_regular': schedule_regular,
@@ -446,4 +445,15 @@ def teacher_schedule(request, date=None):
         'start_dates': get_start_dates(start_date),
         'lesson_types': get_all_lesson_types(), #data for modal form
         'subjects': get_all_subjects(), #data for modal form
+    }
+
+@render_to('free-time.html')
+@login_required
+def free_time(request):
+    hours = get_generic_hour_range()
+
+    days = [x[1] for x in DAYS_OF_THE_WEEK]
+    return {
+        'hours': hours,
+        'days': days,
     }

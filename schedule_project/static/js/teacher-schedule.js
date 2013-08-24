@@ -12,10 +12,10 @@ angular.module('scheduleTeacher', ['ngResource']).
     });
   });
 
-var App = angular.module('schedule', ['ui.bootstrap', 'ui.select2',
+var App = angular.module('schedule', ['loadingIndicator', 'ui.bootstrap', 'ui.select2',
                                       'scheduleTeacher', 'saveSettings', 'hourDetails',
                                       'teachersAndStudents', 'scheduleSave', 'scheduleDelete',
-                                      'roomList']);
+                                      'roomList', 'makeRegular']);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -111,7 +111,7 @@ function ScheduleController($scope, $dialog, Schedule, Settings) {
 
 }
 
-function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, RoomList, ScheduleSave, ScheduleDelete){
+function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, RoomList, ScheduleSave, ScheduleDelete, MakeRegular){
   function get_date(code){
     var pattern = /(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
@@ -141,6 +141,26 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
         $scope.fields.students = $.map($scope.students, function(element) { return element.id; });
       }
     });
+  };
+
+  $scope.makeRegular = function() {
+    var params = {
+      schedule_id: schedule_id,
+    };
+
+    MakeRegular.get(params, function (data) {
+      if (data.success) {
+        $scope.reload = true;
+      } else {
+        displayMessage(false, data.error);
+      }
+    }, function () {
+      displayMessage(false, 'Ошибка назначения расписания в качестве постоянного');
+    });
+  };
+
+  $scope.is_set_schedule_mode_and_not_empty = function() {
+    return schedule_mode == 0 && !$scope.free;
   };
 
   $scope.load = function() {

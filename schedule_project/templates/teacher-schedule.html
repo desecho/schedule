@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-
+<div ng-controller="ScheduleController">
 <div class="btn-group">
   <button ng-click="enableSetSchedule()" ng:class="(schedule_mode === 0)? 'btn active' : 'btn'">Текущее</button>
   <button ng-click="enableRegularSchedule()" ng:class="(schedule_mode == 1)? 'btn active' : 'btn'">Постоянное</button>
@@ -45,5 +45,5 @@
             </tr>
         {% endfor %}
 </table>
-
+</div>
 {% endblock %}

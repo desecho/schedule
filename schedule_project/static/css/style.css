@@ -54,3 +54,18 @@
 .select2-container {
     width: 200px;
 }
+
+.free-hour {
+    background-color: #F3E2A9;
+}
+
+.schedule-table{
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.free-time-table {
+    width: 1px;
+}

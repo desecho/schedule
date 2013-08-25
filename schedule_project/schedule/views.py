@@ -182,7 +182,7 @@ def ajax_apply_settings(request):
         if 'settings' in POST:
             session_settings = json.loads(POST.get('settings'))
             for setting in session_settings:
-                request.session[setting] = session_settings[setting]
+                request.session[setting] = json.dumps(session_settings[setting])
     return HttpResponse()
 
 @ajax_request
@@ -565,14 +565,17 @@ def get_all_subjects():
     output = create_id_value_list(Subject.objects.all())
     return json.dumps(output)
 
+def initialize_mode_setting(session):
+    if 'mode' not in session:
+        session['mode'] = 0
+
 @render_to('admin-schedule.html')
 @login_required
 def admin_schedule(request, date=None):
-    def initialize_session_values():
+    def initialize_settings():
         if 'filters' not in request.session:
-            request.session['filters'] = 'filters'
-        if 'mode' not in request.session:
-            request.session['mode'] = 0
+            request.session['filters'] = {}
+        initialize_mode_setting(request.session)
 
     def get_offices():
         '''
@@ -610,7 +613,7 @@ def admin_schedule(request, date=None):
         hours = get_generic_hour_range()
         return list(chunks(hours, 4))
 
-    initialize_session_values()
+    initialize_settings()
     hours = get_hours_ranges()
     start_date = get_start_date_for_schedule(date)
 
@@ -627,11 +630,7 @@ def admin_schedule(request, date=None):
 @render_to('teacher-schedule.html')
 @login_required
 def teacher_schedule(request, date=None):
-    def initialize_session_values():
-        if 'mode' not in request.session:
-            request.session['mode'] = 0
-
-    initialize_session_values()
+    initialize_mode_setting(request.session)
     hours = get_generic_hour_range()
     start_date = get_start_date_for_schedule(date)
 

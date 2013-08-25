@@ -7,15 +7,17 @@
     var start_date_prev = '{{ start_dates.0|date:"d-m-Y" }}';
     var start_date_current = '{{ start_dates.1|date:"d-m-Y" }}';
     var start_date_next = '{{ start_dates.2|date:"d-m-Y" }}';
-    var schedule_mode = {{ request.session.mode }};
+    var schedule_mode = jQuery.parseJSON('{{ request.session.mode }}');
+    var filters = jQuery.parseJSON('{{ request.session.filters|safe }}');
 </script>
 <script src="/static/js/schedule_general.js"></script>
 <script src="/static/js/admin-schedule.js"></script>
 {% endblock %}
 
+
+
 {% block content %}
 <div ng-controller="ScheduleController">
-
 <div class="btn-group">
   <button ng-click="enableSetSchedule()" ng:class="(schedule_mode === 0)? 'btn active' : 'btn'">Текущее</button>
   <button ng-click="enableRegularSchedule()" ng:class="(schedule_mode == 1)? 'btn active' : 'btn'">Постоянное</button>
@@ -27,28 +29,28 @@
 </div>
 <br><br>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['teacher']" ng-change="update_location()" data-placeholder="Учитель">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['teacher']" ng-change="update_filters()" data-placeholder="Учитель">
     <option value=""></option>
     <option ng-repeat="teacher in teachers" value="[[ teacher.id ]]">[[ teacher.name ]]</option>
 </select>
 
 <button data-ng-show="filters.teacher" ng-click="reset_filter('teacher')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['student']" ng-change="update_location()" data-placeholder="Ученик">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['student']" ng-change="update_filters()" data-placeholder="Ученик">
     <option value=""></option>
     <option ng-repeat="student in students" value="[[ student.id ]]">[[ student.name ]]</option>
 </select>
 
 <button data-ng-show="filters.student" ng-click="reset_filter('student')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['subject']" ng-change="update_location()" data-placeholder="Предмет">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['subject']" ng-change="update_filters()" data-placeholder="Предмет">
     <option value=""></option>
     <option ng-repeat="subject in subjects" value="[[ subject.id ]]">[[ subject.name ]]</option>
 </select>
 
 <button data-ng-show="filters.subject" ng-click="reset_filter('subject')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['lesson_type']" ng-change="update_location()" data-placeholder="Тип урока">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['lesson_type']" ng-change="update_filters()" data-placeholder="Тип урока">
     <option value=""></option>
     <option ng-repeat="lesson_type in lesson_types" value="[[ lesson_type.id ]]">[[ lesson_type.name ]]</option>
 </select>

@@ -1,6 +1,13 @@
-angular.module('roomList', ['ngResource']).
-  factory('RoomList', function($resource) {
-    return $resource('/get-room-list/', {}, {
+angular.module('demandReplacement', ['ngResource']).
+  factory('DemandReplacement', function($resource) {
+    return $resource('/demand-replacement/', {}, {
+      get: {method: 'GET'}
+    });
+  });
+
+  angular.module('rooms', ['ngResource']).
+  factory('Rooms', function($resource) {
+    return $resource('/load-rooms/', {}, {
       get: {method: 'GET', isArray: true}
     });
   });
@@ -14,8 +21,8 @@ angular.module('scheduleTeacher', ['ngResource']).
 
 var App = angular.module('schedule', ['loadingIndicator', 'ui.bootstrap', 'ui.select2',
                                       'scheduleTeacher', 'saveSettings', 'hourDetails',
-                                      'teachersAndStudents', 'scheduleSave', 'scheduleDelete',
-                                      'roomList', 'makeRegular']);
+                                      'students', 'scheduleSave', 'scheduleDelete',
+                                      'rooms', 'makeRegular', 'demandReplacement']);
 App.config(function($interpolateProvider) {
   $interpolateProvider.startSymbol('[[');
   $interpolateProvider.endSymbol(']]');
@@ -111,7 +118,7 @@ function ScheduleController($scope, $dialog, Schedule, Settings) {
 
 }
 
-function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, TeachersAndStudents, RoomList, ScheduleSave, ScheduleDelete, MakeRegular){
+function DialogController($scope, dialog, free, hour_code, schedule_id, schedule_mode, HourDetails, Students, Rooms, ScheduleSave, ScheduleDelete, MakeRegular, DemandReplacement){
   function get_date(code){
     var pattern = /(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
@@ -126,20 +133,27 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
     $scope.mode = 'edit';
   };
 
-  $scope.load_teachers_and_students = function() {
+  $scope.load_students = function() {
     var params = {
       subject_id: $scope.fields.subject,
     };
 
-    TeachersAndStudents.get(params, function (data) {
-      $scope.teachers = data.teachers;
+    Students.get(params, function (data) {
       $scope.schedule_students = data.students;
-      if (typeof $scope.teacher !== 'undefined') {
-        $scope.fields.teacher = $scope.teacher.id;
-      }
       if (typeof $scope.students !== 'undefined') {
         $scope.fields.students = $.map($scope.students, function(element) { return element.id; });
       }
+    });
+  };
+
+  $scope.demand_replacement = function(){
+    var params = {
+      schedule_id: schedule_id,
+    };
+    DemandReplacement.get(params, function (data) {
+
+    }, function () {
+      displayMessage(false, 'Ошибка запроса замены');
     });
   };
 
@@ -175,21 +189,21 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
       $scope.room = data.room;
       $scope.lesson_type = data.lesson_type;
       $scope.students = data.students;
-      $scope.room_list = data.room_list;
+      $scope.rooms = data.rooms;
       $scope.fields.subject = $scope.subject.id;
       $scope.fields.lesson_type = $scope.lesson_type.id;
       $scope.fields.room = $scope.room.id;
     });
   };
 
-  $scope.load_room_list = function() {
+  $scope.load_rooms = function() {
     var params = {
       schedule_mode: schedule_mode,
       hour_code: hour_code,
     };
 
-    RoomList.get(params, function (data) {
-      $scope.room_list = data;
+    Rooms.get(params, function (data) {
+      $scope.rooms = data;
     });
   };
 
@@ -198,7 +212,6 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
       students: JSON.stringify($scope.fields.students),
       subject: $scope.fields.subject,
       lesson_type: $scope.fields.lesson_type,
-      teacher: $scope.fields.teacher,
       room: $scope.fields.room,
       schedule_mode: schedule_mode,
     };
@@ -212,7 +225,7 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
         $scope.mode = 'view';
         $scope.free = false;
         $scope.reload = true;
-        schedule_id = data.id;
+        schedule_id = data.schedule_id;
         $scope.load();
       } else {
         displayMessage(false, data.error);
@@ -243,7 +256,7 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
   $scope.free = free;
   $scope.mode = 'view';
   if ($scope.free){
-    $scope.load_room_list();
+    $scope.load_rooms();
   } else {
     $scope.load();
   }

@@ -10,14 +10,14 @@
           <div class="controls">
             <select ui-select2 ng-model="fields.room" id="room_field" required>
                 <option value=""></option>
-                <option ng-repeat="room in room_list" value="[[ room.id ]]">[[ room.name ]]</option>
+                <option ng-repeat="room in rooms" value="[[ room.id ]]">[[ room.name ]]</option>
             </select>
           </div>
         </div>
         <div class="control-group">
           <label class="control-label" for="subject_field">Предмет</label>
           <div class="controls">
-            <select ui-select2 ng-model="fields.subject" id="subject_field" ng-change="load_teachers_and_students()" required>
+            <select ui-select2 ng-model="fields.subject" id="subject_field" ng-change="load_students()" required>
                 <option value=""></option>
                 <option ng-repeat="subject in subjects" value="[[ subject.id ]]">[[ subject.name ]]</option>
             </select>
@@ -29,15 +29,6 @@
             <select ui-select2 ng-model="fields.lesson_type" id="lesson_type_field" required>
                 <option value=""></option>
                 <option ng-repeat="lesson_type in lesson_types" value="[[ lesson_type.id ]]">[[ lesson_type.name ]]</option>
-            </select>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="teacher_field">Учитель</label>
-          <div class="controls">
-            <select ui-select2 ng-model="fields.teacher" id="teacher_field" required>
-                <option value=""></option>
-                <option ng-repeat="teacher in teachers" value="[[ teacher.id ]]">[[ teacher.name ]]</option>
             </select>
           </div>
         </div>
@@ -61,7 +52,6 @@
             Кабинет - [[ room.name ]]<br>
             Предмет - [[ subject.name ]]<br>
             Тип урока - [[ lesson_type.name ]]<br>
-            Учитель - [[ teacher.name ]]<br>
             Ученики:
             <ul>
                 <li ng-repeat="student in students">[[ student.name ]]</li>
@@ -73,8 +63,9 @@
     </div>
   </div>
   <div class="modal-footer">
-    <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">Назначить постоянным</button>
-    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view">Редактировать</button>
+    <button ng-click="demand_replacement()" class="btn btn-primary" ng-switch-when="view" ng-hide="free">Замена</button>
+    <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">В постоянное</button>
+    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view">Изменить</button>
     <button ng-click="delete()" ng-hide="free" class="btn btn-primary">Удалить</button>
     <button ng-click="close()" class="btn btn-primary">Закрыть</button>
   </div>

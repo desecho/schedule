@@ -31,7 +31,7 @@ App.config(function($interpolateProvider) {
 function ScheduleController($scope, $route, $routeParams, $location, $dialog, Schedule, Settings) {
 
   var filter_names = ['teacher', 'student', 'subject', 'lesson_type'];
-  $scope.filters = {};
+  $scope.filters = filters;
   $scope.schedule_mode = schedule_mode; //enable set schedule by default
 
   $scope.saveModeSettings = function() {
@@ -155,6 +155,15 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
       $scope.filters = {};
     else
       delete $scope.filters[filter];
+    $scope.update_filters();
+  };
+
+  $scope.update_filters = function() {
+    settings = JSON.stringify({filters: $scope.filters});
+    data = $.param({settings: settings});
+    Settings.post(data, function(){}, function(){
+      displayMessage(false, 'Ошибка сохранения фильтров');
+    });
     $scope.update_location();
   };
 
@@ -197,6 +206,8 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
       }
     }
   );
+
+  $scope.update_location();
 }
 
 function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, Teachers, Students, ScheduleSave, ScheduleDelete, MakeRegular){

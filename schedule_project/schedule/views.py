@@ -18,26 +18,165 @@ DATE_CODE_FORMAT = '%d%m%Y'
 DATE_HOUR_CODE_FORMAT = DATE_CODE_FORMAT + '_%H'
 
 def create_id_value_list(input):
+    '''
+        Keyword arguments:
+            input -- QuerySet
+
+        Returns List containing Dict
+    '''
     return [{'id': x.pk, 'name': x.name} for x in input]
 
 def create_id_value_list_full_name(input):
+    '''
+        Keyword arguments:
+            input -- QuerySet
+
+        Returns List containing Dict
+    '''
     return [{'id': x.pk, 'name': x.get_full_name()} for x in input]
 
 def parse_date(date):
+    '''
+        Keyword arguments:
+            date -- String
+
+        Returns date
+    '''
     return datetime.datetime.strptime(date, '%d-%m-%Y').date()
 
+def parse_datetime(date):
+    '''
+        Keyword arguments:
+            date -- String
+
+        Returns datetime
+    '''
+    return datetime.datetime.strptime(date, DATE_HOUR_CODE_FORMAT)
+
 def get_start_date(date):
-    'Returns the datetime of Monday of the current week'
+    '''
+        Returns the datetime of Monday of the date's week
+
+        Keyword arguments:
+            date -- datetime
+    '''
     return date - datetime.timedelta(days=date.weekday())
 
 def get_end_date(start_date):
+    '''
+        Returns the datetime of 1 week ahead from the start_date
+
+        Keyword arguments:
+            start_date -- datetime
+    '''
     return start_date + relativedelta(weeks=1)
+
+def get_schedule(schedule_mode, schedule_id):
+    '''
+        Keyword arguments:
+            schedule_mode -- String
+            schedule_id - String
+
+        Returns Schedule
+    '''
+    if schedule_mode == '0':
+        schedule = ScheduleSet
+    elif schedule_mode == '1':
+        schedule = ScheduleRegular
+    return schedule.objects.get(pk=schedule_id)
+
+def filter_schedules_by_date_from_schedule(schedule, schedule_mode):
+    '''
+        Returns Schedules QuerySet filtered by date
+
+        Keyword arguments:
+            schedule -- Schedule
+            schedule_mode -- String
+    '''
+    if schedule_mode == '0':
+        filters = {'date': schedule.date}
+        schedules = ScheduleSet
+    elif schedule_mode == '1':
+        filters = {
+            'weekday': schedule.weekday,
+            'time': schedule.time,
+        }
+        schedules = ScheduleRegular
+    return schedules.objects.filter(**filters)
+
+def get_schedule_and_filters(schedule_mode, date):
+    '''
+        Returns Tuple (Schedule, Dict) - (Schedule, date filters)
+
+        Keyword arguments:
+            schedule_mode -- String
+            date -- datetime
+    '''
+    if schedule_mode == '0':
+        schedule = ScheduleSet
+        filters = {'date': date}
+    elif schedule_mode == '1':
+        schedule = ScheduleRegular
+        filters = {
+            'weekday': date.weekday,
+            'time': date.time,
+        }
+    return (schedule, filters)
+
+def filter_schedules_by_date(schedule_mode, date):
+    '''
+        Returns Schedules filtered by date
+
+        Keyword arguments:
+            schedule_mode -- String
+            date -- datetime
+    '''
+    schedule, filters = get_schedule_and_filters(schedule_mode, date)
+    return schedule.objects.filter(**filters)
+
+def has_conflicts_on_adding(type, schedule, filters):
+    '''
+        Tests if the Schedule already exists. Includes 3 types of checks:
+            self - Checks if the schedule has been already created
+            room - Checks if the room is not busy at that day
+            teacher - Checks if the teacher is not busy at that day
+
+        Keyword arguments:
+            type -- String
+            schedule -- Schedule (general object)
+            filters -- Dict
+
+        Returns Boolean
+    '''
+    if type != 'self':
+        if type == 'room':
+            parameter_to_remove = 'teacher'
+        if type == 'teacher':
+            parameter_to_remove = 'room'
+        del filters['subject']
+        del filters['lesson_type']
+        del filters[parameter_to_remove]
+    n = schedule.objects.filter(**filters).count()
+    return n != 0
+
+def parse_room_hour_code(room_hour_code):
+    '''
+        Keyword arguments:
+            room_hour_code -- String
+
+        Returns (String, datetime) - (Room id, date)
+    '''
+    match = re.match('(\d+)_(.+)', room_hour_code)
+    room_id = match.group(1)
+    date = parse_datetime(match.group(2))
+    return (room_id, date)
 
 def logout_view(request):
     logout(request)
     return redirect('/login')
 
 def ajax_apply_settings(request):
+    'Saves settings into session'
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
         if 'settings' in POST:
@@ -46,82 +185,60 @@ def ajax_apply_settings(request):
                 request.session[setting] = session_settings[setting]
     return HttpResponse()
 
-def get_schedule(schedule_mode, id):
-    if schedule_mode == '0':
-        schedule = ScheduleSet
-    elif schedule_mode == '1':
-        schedule = ScheduleRegular
-    return schedule.objects.get(pk=id)
-
-def filter_schedule_by_date(schedule, schedule_mode):
-    filters = {}
-    if schedule_mode == '0':
-        filters['date'] = schedule.date
-        schedule_filter = ScheduleSet
-    elif schedule_mode == '1':
-        filters['weekday'] = schedule.weekday
-        filters['time'] = schedule.time
-        schedule_filter = ScheduleRegular
-    return schedule_filter.objects.filter(**filters)
-
-def parse_datetime(date):
-    return datetime.datetime.strptime(date, DATE_HOUR_CODE_FORMAT)
-
-def get_schedule_and_filter_params(schedule_mode, date):
-    filter_params = {}
-    if schedule_mode == '0':
-        filter_params['date'] = date
-        schedule = ScheduleSet
-    elif schedule_mode == '1':
-        filter_params['weekday'] = date.weekday()
-        filter_params['time'] = date.time()
-        schedule = ScheduleRegular
-    return (schedule, filter_params)
-
-def has_conflicts_create(type, schedule, data):
-    if type != 'self':
-        if type == 'room':
-            parameter_to_remove = 'teacher'
-        if type == 'teacher':
-            parameter_to_remove = 'room'
-        del data['subject']
-        del data['lesson_type']
-        del data[parameter_to_remove]
-    n = schedule.objects.filter(**data).count()
-    return n != 0
-
 @ajax_request
 @login_required
 def ajax_save_schedule(request):
-    def has_conflicts_edit(type):
-        schedule_filter = filter_schedule_by_date(schedule, schedule_mode)
-        filters= {}
+    'Returns String - Schedule id'
+    def has_conflicts_on_changing(type):
+        '''
+            Tests if the Schedule already exists. Includes 3 types of checks:
+                room - Checks if the room is not busy at that day
+                teacher - Checks if the teacher is not busy at that day
+
+            Keyword arguments:
+                type -- String
+
+            Returns Boolean
+        '''
+        schedule_filter = filter_schedules_by_date_from_schedule(schedule, schedule_mode)
         if type == 'room':
-            filters[type] = room
+            filters= {type: room}
         if type == 'teacher':
-            filters[type] = teacher
+            filters= {type: teacher}
         n = schedule_filter.filter(**filters).exclude(pk=schedule.pk).count()
         return n != 0
 
-    def get_room_and_date(room_hour_code):
-        match = re.match('(\d+)_(.+)', room_hour_code)
-        room_id = match.group(1)
-        date = parse_datetime(match.group(2))
-        return (room_id, date)
+    def get_teacher():
+        'Returns Teacher'
+        teacher = POST.get('teacher', None)
+        if teacher is None:
+            filters = {'user': request.user}
+        else:
+            filters = {'pk': teacher}
+        return Teacher.objects.get(**filters)
+
+    def get_students():
+        'Returns Students'
+        return Student.objects.filter(pk__in=json.loads(POST.get('students')))
+
+    def get_room_and_date():
+        room_hour_code = POST.get('room_hour_code', None)
+        hour_code = POST.get('hour_code', None)
+        if room_hour_code is not None:
+            room_id, date = parse_room_hour_code(room_hour_code)
+            room = Room.objects.get(pk=room_id)
+        else:
+            date = parse_datetime(hour_code)
+        return (room, date)
 
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
-        subject = POST.get('subject')
-        lesson_type = POST.get('lesson_type')
-        teacher = POST.get('teacher')
-        students = json.loads(POST.get('students'))
         schedule_mode = POST.get('schedule_mode')
         room = POST.get('room', None)
 
-        subject = Subject.objects.get(pk=subject)
-        lesson_type = LessonType.objects.get(pk=lesson_type)
-        teacher = Teacher.objects.get(pk=teacher)
-        students = Student.objects.filter(pk__in=students)
+        subject = Subject.objects.get(pk=POST.get('subject'))
+        lesson_type = LessonType.objects.get(pk=POST.get('lesson_type'))
+        teacher = get_teacher()
 
         if room is not None:
             room = Room.objects.get(pk=room)
@@ -135,37 +252,30 @@ def ajax_save_schedule(request):
             schedule.teacher = teacher
             if room is not None:
                 schedule.room = room
-                if has_conflicts_edit('room'):
+                if has_conflicts_on_changing('room'):
                     return {'success': False, 'error': 'Кабинет на это время уже занят'}
-            if has_conflicts_edit('teacher'):
+            if has_conflicts_on_changing('teacher'):
                 return {'success': False, 'error': 'Учитель в это время занят'}
-            schedule.save()
         else:
-            room_hour_code = POST.get('room_hour_code', None)
-            hour_code = POST.get('hour_code', None)
-            if room_hour_code is not None:
-                room_id, date = get_room_and_date(room_hour_code)
-                room = Room.objects.get(pk=room_id)
-            else:
-                date = parse_datetime(hour_code)
-            data = {
+            room, date = get_room_and_date()
+            filters = {
                 'subject': subject,
                 'lesson_type': lesson_type,
                 'teacher': teacher,
                 'room': room,
             }
-            schedule, filter_params = get_schedule_and_filter_params(schedule_mode, date)
-            data.update(filter_params)
-            if has_conflicts_create('room', schedule, dict(data)):
+            schedule, date_filters = get_schedule_and_filters(schedule_mode, date)
+            filters.update(date_filters)
+            if has_conflicts_on_adding('room', schedule, dict(filters)):
                 return {'success': False, 'error': 'Кабинет на это время уже занят'}
-            if has_conflicts_create('teacher', schedule, dict(data)):
+            if has_conflicts_on_adding('teacher', schedule, dict(filters)):
                 return {'success': False, 'error': 'Учитель в это время занят'}
 
-            schedule = schedule(**data)
-            schedule.save()
+            schedule = schedule(**filters)
 
-        schedule.students = students
-    return {'success': True, 'id': schedule.pk}
+        schedule.save()
+        schedule.students = get_students()
+    return {'success': True, 'schedule_id': schedule.pk}
 
 @login_required
 def ajax_delete_schedule(request):
@@ -178,40 +288,83 @@ def ajax_delete_schedule(request):
 
 @ajax_request
 @login_required
-def ajax_teachers_and_students(request):
+def ajax_load_teachers(request):
+    'Returns a List of teacher names'
+    def get_busy_teachers():
+        def get_date():
+            room_hour_code = request.GET.get('room_hour_code', None)
+            room_and_date = parse_room_hour_code(room_hour_code)
+            return room_and_date[1]
+
+        schedule_mode = request.GET.get('schedule_mode', None)
+        schedule_id = request.GET.get('schedule_id', None)
+        schedules = filter_schedules_by_date(schedule_mode, get_date())
+        if schedule_id is not None:
+            schedules = schedules.exclude(pk=schedule_id)
+        busy_teachers = schedules.values_list('teacher')
+        return [x[0] for x in busy_teachers]
+
     subject_id = request.GET.get('subject_id', None)
-    teachers = create_id_value_list_full_name(Teacher.objects.filter(subjects__pk=subject_id))
-    students = create_id_value_list_full_name(Student.objects.filter(subjects__pk=subject_id))
+    busy_teachers = get_busy_teachers()
+    teachers = Teacher.objects.filter(subjects__pk=subject_id)
+    teachers = [x for x in create_id_value_list_full_name(teachers) if x['id'] not in busy_teachers]
+
     result = {
         'teachers': teachers,
+    }
+    return result
+
+@ajax_request
+@login_required
+def ajax_load_students(request):
+    'Returns a List of student names'
+    subject_id = request.GET.get('subject_id', None)
+    students = create_id_value_list_full_name(Student.objects.filter(subjects__pk=subject_id))
+    result = {
         'students': students,
     }
     return result
 
-def get_available_room_list(schedules):
-    def get_busy_rooms(schedules):
-        busy_rooms = schedules.values_list('room')
+
+def get_available_rooms(busy_schedules):
+    '''
+        Returns a List of available rooms.
+
+        Keyword arguments:
+            busy_schedules -- Schedule QuerySet
+    '''
+    def get_busy_rooms(busy_schedules):
+        busy_rooms = busy_schedules.values_list('room')
         return [x[0] for x in busy_rooms]
-    busy_rooms = get_busy_rooms(schedules)
+    busy_rooms = get_busy_rooms(busy_schedules)
     return [x for x in create_id_value_list_full_name(Room.objects.all()) if x['id'] not in busy_rooms]
 
 @ajax_request
 @login_required
-def ajax_get_room_list(request):
+def ajax_load_rooms(request):
+    'Returns a List of available rooms.'
     schedule_mode = request.GET.get('schedule_mode', None)
     hour_code = request.GET.get('hour_code', None)
     date = parse_datetime(hour_code)
-    schedule, filter_params = get_schedule_and_filter_params(schedule_mode, date)
-    schedules = schedule.objects.filter(**filter_params)
-    return get_available_room_list(schedules)
-
+    busy_schedules = filter_schedules_by_date(schedule_mode, date)
+    return get_available_rooms(busy_schedules)
 
 @ajax_request
 @login_required
-def ajax_get_hour_details(request):
-    def get_room_list():
-        current_day_schedules = filter_schedule_by_date(schedule, schedule_mode).exclude(pk=schedule.pk)
-        return get_available_room_list(current_day_schedules)
+def ajax_load_hour_details(request):
+    '''
+        Returns dict of
+        - dict with teacher id and name,
+        - dict with room id and name,
+        - dict with subject id and name,
+        - dict with lesson_type id and name,
+        - dict with students ids and names,
+        - list of available rooms
+    '''
+    def get_rooms():
+        'Returns a List of available rooms.'
+        busy_schedules = filter_schedules_by_date_from_schedule(schedule, schedule_mode).exclude(pk=schedule.pk)
+        return get_available_rooms(busy_schedules)
 
     schedule_mode = request.GET.get('schedule_mode', None)
     schedule_id = request.GET.get('schedule_id', None)
@@ -223,18 +376,34 @@ def ajax_get_hour_details(request):
         'subject': {'id': schedule.subject.pk, 'name': schedule.subject.name},
         'lesson_type': {'id': schedule.lesson_type.pk, 'name': schedule.lesson_type.name},
         'students': create_id_value_list_full_name(schedule.students.all()),
-        'room_list': get_room_list(),
+        'rooms': get_rooms(),
     }
 
     return result
 
-def get_general_schedule(schedule_mode, start_date, end_date):
+def get_all_schedules(schedule_mode, start_date, end_date):
+    '''
+        Returns Schedule QuerySet
+
+        Keyword arguments:
+            schedule_mode -- String
+            start_date -- datetime
+            end_date -- datetime
+    '''
     if schedule_mode == 'set':
         return ScheduleSet.objects.filter(date__gte=start_date, date__lte=end_date)
     elif schedule_mode == 'regular':
         return ScheduleRegular.objects.all()
 
 def get_date_from_schedule(schedule_mode, schedule, start_date):
+    '''
+        Returns datetime
+
+        Keyword arguments:
+            schedule_mode -- String
+            schedule -- Schedule
+            start_date -- datetime
+    '''
     if schedule_mode == 'set':
         date = schedule.date
     elif schedule_mode == 'regular':
@@ -242,18 +411,24 @@ def get_date_from_schedule(schedule_mode, schedule, start_date):
         date = datetime.datetime.combine(date, schedule.time)
     return date
 
-
+#2do continue commenting
 @ajax_request
 @login_required
 def ajax_load_admin_schedule(request, date):
-    def get_schedule(schedule_mode, start_date, end_date):
+    def get_filtered_schedules(schedule_mode, start_date, end_date):
+        schedules = get_all_schedules(schedule_mode, start_date, end_date)
+        return schedules.filter(**filters)
+
+    def get_schedule(schedule_mode, start_date, end_date, replacements=False):
         '''
-            Returns a json of a dict of set schedule starting from Monday of the current week
+            Returns a dict of set schedule starting from Monday of the current week
         '''
         output = {}
-        schedules = get_general_schedule(schedule_mode, start_date, end_date)
 
-        schedules = schedules.filter(**filters)
+        schedules = get_filtered_schedules(schedule_mode, start_date, end_date)
+
+        if replacements:
+            schedules = schedules.filter(replacement_demand=True)
         for schedule in schedules:
             date = get_date_from_schedule(schedule_mode, schedule, start_date)
             code = '%d_%s' % (schedule.room.pk, date.strftime(DATE_HOUR_CODE_FORMAT))
@@ -313,21 +488,14 @@ def ajax_load_admin_schedule(request, date):
         filters['subject__pk'] = subject
         filters_subjects['subjects__pk'] = subject
 
-
-    schedule_set = get_schedule('set', start_date, end_date)
-    schedule_regular = get_schedule('regular', start_date, end_date)
-
-    teachers_filter = get_teachers_filter()
-    students_filter = get_students_filter()
-    subjects_filter = get_subjects_filter()
-    lesson_types_filter = get_lesson_types_filter()
     result = {
-        'schedule_set': schedule_set,
-        'schedule_regular': schedule_regular,
-        'teachers': teachers_filter,
-        'students': students_filter,
-        'subjects': subjects_filter,
-        'lesson_types': lesson_types_filter,
+        'schedule_set': get_schedule('set', start_date, end_date),
+        'schedule_regular': get_schedule('regular', start_date, end_date),
+        'schedule_replacements': get_schedule('set', start_date, end_date, True),
+        'teachers': get_teachers_filter(),
+        'students': get_students_filter(),
+        'subjects': get_subjects_filter(),
+        'lesson_types': get_lesson_types_filter(),
         'free_time': free_time,
     }
     return result
@@ -341,7 +509,7 @@ def ajax_load_teacher_schedule(request, date):
             Returns a json of a dict of set schedule starting from Monday of the current week
         '''
         output = {}
-        schedules = get_general_schedule(schedule_mode, start_date, end_date).filter(teacher__user=request.user)
+        schedules = get_all_schedules(schedule_mode, start_date, end_date).filter(teacher__user=request.user)
         for schedule in schedules:
             date = get_date_from_schedule(schedule_mode, schedule, start_date)
             code = date.strftime(DATE_HOUR_CODE_FORMAT)
@@ -494,7 +662,6 @@ def ajax_save_free_time(request):
             teacher.save()
     return HttpResponse()
 
-
 @ajax_request
 @login_required
 def ajax_make_regular(request):
@@ -509,17 +676,16 @@ def ajax_make_regular(request):
         'time': schedule.date.time()
     }
     schedule_regular = ScheduleRegular
-    if has_conflicts_create('self', schedule_regular, dict(data)):
+    if has_conflicts_on_adding('self', schedule_regular, dict(data)):
         return {'success': False, 'error': 'Этот урок уже назначен постоянным'}
-    if has_conflicts_create('room', schedule_regular, dict(data)):
+    if has_conflicts_on_adding('room', schedule_regular, dict(data)):
         return {'success': False, 'error': 'Кабинет на это время уже занят'}
-    if has_conflicts_create('teacher', schedule_regular, dict(data)):
+    if has_conflicts_on_adding('teacher', schedule_regular, dict(data)):
         return {'success': False, 'error': 'Учитель в это время занят'}
     schedule_regular = schedule_regular(**data)
     schedule_regular.save()
     schedule_regular.students = schedule.students.all()
     return {'success': True}
-
 
 @render_to('free-time.html')
 @login_required
@@ -530,3 +696,11 @@ def free_time(request):
         'hours': hours,
         'days': DAYS_OF_THE_WEEK,
     }
+
+@login_required
+def ajax_demand_replacement(request):
+    schedule_id = request.GET.get('schedule_id', None)
+    schedule = ScheduleSet.objects.get(pk=schedule_id)
+    schedule.replacement_demand = True
+    schedule.save()
+    return HttpResponse()

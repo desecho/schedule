@@ -1,3 +1,10 @@
+angular.module('teachers', ['ngResource']).
+  factory('Teachers', function($resource) {
+    return $resource('/load-teachers/', {}, {
+      get: {method: 'GET'}
+    });
+  });
+
 angular.module('scheduleAdmin', ['ngResource']).
   factory('Schedule', function($resource) {
     return $resource('/load-admin-schedule/' + start_date_current, {}, {
@@ -7,7 +14,7 @@ angular.module('scheduleAdmin', ['ngResource']).
 
 var App = angular.module('schedule', ['loadingIndicator', 'ngRoute', 'ui.bootstrap', 'ui.select2',
                                       'scheduleAdmin', 'saveSettings',
-                                      'hourDetails', 'teachersAndStudents',
+                                      'hourDetails', 'teachers', 'students',
                                       'scheduleSave', 'scheduleDelete', 'makeRegular',
                                       ]);
 App.config(function($interpolateProvider) {
@@ -54,6 +61,7 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
     Schedule.get(params, function (data) {
       $scope.schedule_regular = data.schedule_regular;
       $scope.schedule_set = data.schedule_set;
+      $scope.schedule_replacements = data.schedule_replacements;
       $scope.teachers = data.teachers;
       $scope.students = data.students;
       $scope.subjects = data.subjects;
@@ -70,14 +78,24 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
 
   $scope.activateScheduleClasses = function(){
     function resetScheduleClasses(){
-      $('.room-hour').removeClass('schedule-busy');
+      $('.room-hour').removeClass('schedule-busy').removeClass('schedule-replacement');
+    }
+    function applyBusyClasses(){
+      var schedule = $scope.getCurrentSchedule();
+      $.each(schedule, function(id, value) {
+          var name = '#room-hour_' + id;
+          $(name).addClass('schedule-busy');
+      });
+    }
+    function applyReplacementClasses(){
+      $.each($scope.schedule_replacements, function(id, value) {
+          var name = '#room-hour_' + id;
+          $(name).addClass('schedule-replacement');
+      });
     }
     resetScheduleClasses();
-    var schedule = $scope.getCurrentSchedule();
-    $.each(schedule, function(id, value) {
-        var name = '#room-hour_' + id;
-        $(name).addClass('schedule-busy');
-    });
+    applyBusyClasses();
+    applyReplacementClasses();
   };
 
   $scope.enableSetSchedule = function(){
@@ -181,7 +199,7 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
   );
 }
 
-function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, TeachersAndStudents, ScheduleSave, ScheduleDelete, MakeRegular){
+function DialogController($scope, dialog, free, schedule_id, room_hour_code, schedule_mode, HourDetails, Teachers, Students, ScheduleSave, ScheduleDelete, MakeRegular){
   function get_date_room(code){
     var pattern = /(\d+)_(\d{2})(\d{2})(\d{4})_(\d+)/g;
     var match = pattern.exec(code);
@@ -198,21 +216,39 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
     $scope.mode = 'edit';
   };
 
-  $scope.load_teachers_and_students = function() {
+  $scope.load_teachers = function() {
+    var params = {
+      subject_id: $scope.fields.subject,
+      schedule_mode: schedule_mode,
+      room_hour_code: room_hour_code,
+    };
+    if (typeof schedule_id !== 'undefined') {
+      params['schedule_id'] = schedule_id;
+    }
+    Teachers.get(params, function (data) {
+      $scope.teachers = data.teachers;
+      if (typeof $scope.teacher !== 'undefined') {
+        $scope.fields.teacher = $scope.teacher.id;
+      }
+    });
+  };
+
+  $scope.load_students = function() {
     var params = {
       subject_id: $scope.fields.subject,
     };
 
-    TeachersAndStudents.get(params, function (data) {
-      $scope.teachers = data.teachers;
+    Students.get(params, function (data) {
       $scope.schedule_students = data.students;
-      if (typeof $scope.teacher !== 'undefined') {
-        $scope.fields.teacher = $scope.teacher.id;
-      }
       if (typeof $scope.students !== 'undefined') {
         $scope.fields.students = $.map($scope.students, function(element) { return element.id; });
       }
     });
+  };
+
+  $scope.load_teachers_and_students = function() {
+    $scope.load_teachers();
+    $scope.load_students();
   };
 
   $scope.makeRegular = function() {
@@ -268,7 +304,7 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
         $scope.mode = 'view';
         $scope.free = false;
         $scope.reload = true;
-        schedule_id = data.id;
+        schedule_id = data.schedule_id;
         $scope.load();
       } else {
         displayMessage(false, data.error);

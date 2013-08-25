@@ -1,6 +1,6 @@
 angular.module('hourDetails', ['ngResource']).
   factory('HourDetails', function($resource) {
-    return $resource('/get-hour-details/', {}, {
+    return $resource('/load-hour-details/', {}, {
       get: {method: 'GET'}
     });
   });
@@ -8,6 +8,13 @@ angular.module('hourDetails', ['ngResource']).
 angular.module('teachersAndStudents', ['ngResource']).
   factory('TeachersAndStudents', function($resource) {
     return $resource('/teachers-and-students/', {}, {
+      get: {method: 'GET'}
+    });
+  });
+
+angular.module('students', ['ngResource']).
+  factory('Students', function($resource) {
+    return $resource('/load-students/', {}, {
       get: {method: 'GET'}
     });
   });

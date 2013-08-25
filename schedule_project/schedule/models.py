@@ -118,6 +118,7 @@ class ScheduleSet(models.Model):
     date = models.DateTimeField('дата/время')
     subject = models.ForeignKey(Subject, verbose_name='предмет')
     students = models.ManyToManyField(Student, verbose_name='ученики')
+    replacement_demand = models.BooleanField('необходимость замены')
 
     class Meta:
         verbose_name = 'расписание установленное'
@@ -125,6 +126,7 @@ class ScheduleSet(models.Model):
 
     def __unicode__(self):
         return '%s - %s - %s' % (self.date.strftime(settings.DATETIME_FORMAT), self.teacher.get_name(), self.room.get_full_name())
+
 
 class ScheduleRegular(models.Model):
     teacher = models.ForeignKey(Teacher, verbose_name='учитель')
@@ -141,4 +143,3 @@ class ScheduleRegular(models.Model):
 
     def __unicode__(self):
         return '%s %s - %s' % (get_weekday(self.weekday), self.time.strftime(settings.TIME_FORMAT), self.teacher.get_name())
-

@@ -5,7 +5,7 @@ import json
 import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from schedule.models import Office, Room, ScheduleSet, ScheduleRegular, Teacher, Student, Subject, LessonType, DAYS_OF_THE_WEEK
+from schedule.models import Office, Administrator, Room, ScheduleSet, ScheduleRegular, Teacher, Student, Subject, LessonType, DAYS_OF_THE_WEEK
 from annoying.decorators import ajax_request, render_to
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -13,6 +13,11 @@ from django.conf import settings
 
 from dateutil.relativedelta import relativedelta
 import chromelogger as console
+from django.contrib.auth.decorators import user_passes_test
+
+def is_admin(user):
+    return user.is_staff
+
 
 DATE_CODE_FORMAT = '%d%m%Y'
 DATE_HOUR_CODE_FORMAT = DATE_CODE_FORMAT + '_%H'
@@ -221,7 +226,7 @@ def ajax_save_schedule(request):
         'Returns Students'
         return Student.objects.filter(pk__in=json.loads(POST.get('students')))
 
-    def get_room_and_date():
+    def get_room_and_date(room):
         room_hour_code = POST.get('room_hour_code', None)
         hour_code = POST.get('hour_code', None)
         if room_hour_code is not None:
@@ -230,6 +235,12 @@ def ajax_save_schedule(request):
         else:
             date = parse_datetime(hour_code)
         return (room, date)
+
+    def cabinet_busy_error():
+        return {'success': False, 'error': 'Кабинет на это время уже занят'}
+
+    def teacher_busy_error():
+        return {'success': False, 'error': 'Учитель в это время занят'}
 
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
@@ -246,18 +257,18 @@ def ajax_save_schedule(request):
         if 'schedule_id' in POST:
             schedule_id = POST['schedule_id']
             schedule = get_schedule(schedule_mode, schedule_id)
-
             schedule.subject = subject
             schedule.lesson_type = lesson_type
             schedule.teacher = teacher
             if room is not None:
                 schedule.room = room
                 if has_conflicts_on_changing('room'):
-                    return {'success': False, 'error': 'Кабинет на это время уже занят'}
+                    return cabinet_busy_error()
             if has_conflicts_on_changing('teacher'):
-                return {'success': False, 'error': 'Учитель в это время занят'}
+                return teacher_busy_error()
+
         else:
-            room, date = get_room_and_date()
+            room, date = get_room_and_date(room)
             filters = {
                 'subject': subject,
                 'lesson_type': lesson_type,
@@ -267,14 +278,25 @@ def ajax_save_schedule(request):
             schedule, date_filters = get_schedule_and_filters(schedule_mode, date)
             filters.update(date_filters)
             if has_conflicts_on_adding('room', schedule, dict(filters)):
-                return {'success': False, 'error': 'Кабинет на это время уже занят'}
+                return cabinet_busy_error()
             if has_conflicts_on_adding('teacher', schedule, dict(filters)):
-                return {'success': False, 'error': 'Учитель в это время занят'}
+                return teacher_busy_error()
 
             schedule = schedule(**filters)
 
-        schedule.save()
-        schedule.students = get_students()
+
+        def is_allowed_to_edit():
+            if schedule_mode == '0' and not request.user.is_staff:
+                today = datetime.datetime.today()
+                return (today - schedule.date).days <= 3
+            else:
+                return True
+
+        if is_allowed_to_edit():
+            schedule.save()
+            schedule.students = get_students()
+        else:
+            return {'success': False, 'error': 'Вы не можете редактировать расписание по истечении 3-х дней'}
     return {'success': True, 'schedule_id': schedule.pk}
 
 @login_required
@@ -569,6 +591,7 @@ def initialize_mode_setting(session):
     if 'mode' not in session:
         session['mode'] = 0
 
+@user_passes_test(is_admin)
 @render_to('admin-schedule.html')
 @login_required
 def admin_schedule(request, date=None):
@@ -581,8 +604,16 @@ def admin_schedule(request, date=None):
         '''
             Returns a list of dict containing office name and rooms
         '''
+        def restrict_admin_to_one_office(offices):
+            user = request.user
+            if not user.is_superuser:
+                user_office_id = Administrator.objects.get(user=user).office.pk
+                offices = offices.filter(pk=user_office_id)
+            return offices
+
         output = []
         offices = Office.objects.all()
+        offices = restrict_admin_to_one_office(offices)
         for office in offices:
             rooms = Room.objects.filter(office=office)
             output.append({'name': office.name, 'rooms': rooms})

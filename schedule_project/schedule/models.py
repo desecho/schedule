@@ -31,7 +31,7 @@ class Subject(models.Model):
 
 
 class Teacher(models.Model):
-    user = models.OneToOneField(User, verbose_name='учитель')
+    user = models.OneToOneField(User, verbose_name='пользователь')
     free_time = JSONField('свободное время', default='{"0":[],"1":[],"2":[],"3":[],"4":[],"5":[],"6":[]}')
     subjects = models.ManyToManyField(Subject, verbose_name='предметы')
 
@@ -44,6 +44,29 @@ class Teacher(models.Model):
 
     def __unicode__(self):
         return self.get_full_name()
+
+
+class Office(models.Model):
+    name = models.CharField('название', max_length=255)
+
+    class Meta:
+        verbose_name = 'офис'
+        verbose_name_plural = 'офисы'
+
+    def __unicode__(self):
+        return self.name
+
+
+class Administrator(models.Model):
+    user = models.OneToOneField(User, verbose_name='пользователь')
+    office = models.ForeignKey(Office, verbose_name='офис')
+
+    class Meta:
+        verbose_name = 'администратор'
+        verbose_name_plural = 'администраторы'
+
+    def __unicode__(self):
+        return self.user.get_full_name()
 
 
 class Student(models.Model):
@@ -72,17 +95,6 @@ class Student(models.Model):
 
     def __unicode__(self):
         return self.get_full_name()
-
-
-class Office(models.Model):
-    name = models.CharField('название', max_length=255)
-
-    class Meta:
-        verbose_name = 'офис'
-        verbose_name_plural = 'офисы'
-
-    def __unicode__(self):
-        return self.name
 
 
 class Room(models.Model):

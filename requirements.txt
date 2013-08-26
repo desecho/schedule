@@ -3,3 +3,6 @@
 
 mysql-python
 django-annoying>=0.7.7
+django-simple-menu
+python-dateutil
+django-bootstrap-toolkit

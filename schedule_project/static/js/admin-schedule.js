@@ -42,23 +42,52 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
     });
   };
 
-  $scope.load = function() {
-    function resetFreeTimeClasses() {
-      $('.room-hour').removeClass('free-hour');
-    }
+  function resetClasses(class_name) {
+    $('.room-hour').removeClass(class_name);
+  }
 
-    function activateFreeTimeClasses(free_time){
-      resetFreeTimeClasses();
-      $.each(free_time, function(key, value){
+  $scope.load = function() {
+    function activateTimeClasses(time, class_name){
+      resetClasses(class_name);
+      $.each(time, function(key, value){
         var element = $('#room-hour_' + value);
         if (!element.hasClass('schedule-busy')) {
-          element.addClass('free-hour');
+          element.addClass(class_name);
         }
       });
     }
 
     var params = angular.copy($scope.filters);
     Schedule.get(params, function (data) {
+
+      function process_teacher_time(){
+        if (teacher_time) {
+          activateTimeClasses(teacher_time, 'teacher-hour');
+        } else {
+          resetClasses('teacher-hour');
+          resetClasses('teacher-student-hour');
+        }
+      }
+
+      function process_student_time(){
+        if (student_time) {
+          activateTimeClasses(student_time, 'student-hour');
+        } else {
+          resetClasses('student-hour');
+          resetClasses('teacher-student-hour');
+        }
+      }
+
+      function process_teacher_student_overlaps(){
+        $.each($('.teacher-hour'), function(key, element){
+          if ($(element).hasClass('student-hour')) {
+            $(element).removeClass('student-hour');
+            $(element).removeClass('teacher-hour');
+            $(element).addClass('teacher-student-hour');
+          }
+        });
+      }
+
       $scope.schedule_regular = data.schedule_regular;
       $scope.schedule_set = data.schedule_set;
       $scope.schedule_replacements = data.schedule_replacements;
@@ -67,18 +96,20 @@ function ScheduleController($scope, $route, $routeParams, $location, $dialog, Sc
       $scope.subjects = data.subjects;
       $scope.lesson_types = data.lesson_types;
       $scope.activateScheduleClasses();
-      var free_time = data.free_time;
-      if (free_time) {
-        activateFreeTimeClasses(free_time);
-      } else {
-        resetFreeTimeClasses();
-      }
+      var teacher_time = data.teacher_time;
+      var student_time = data.student_time;
+
+      process_teacher_time();
+      process_student_time();
+      process_teacher_student_overlaps();
+
     });
   };
 
   $scope.activateScheduleClasses = function(){
     function resetScheduleClasses(){
-      $('.room-hour').removeClass('schedule-busy').removeClass('schedule-replacement');
+      resetClasses('schedule-busy');
+      resetClasses('schedule-replacement');
     }
     function applyBusyClasses(){
       var schedule = $scope.getCurrentSchedule();
@@ -247,6 +278,7 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
   $scope.load_students = function() {
     var params = {
       subject_id: $scope.fields.subject,
+      room_hour_code: room_hour_code,
     };
 
     Students.get(params, function (data) {
@@ -332,9 +364,13 @@ function DialogController($scope, dialog, free, schedule_id, room_hour_code, sch
       schedule_mode: schedule_mode,
     };
     ScheduleDelete.post($.param(params), function (data) {
-      $scope.mode = 'view';
-      $scope.free = true;
-      $scope.reload = true;
+      if (data.success) {
+        $scope.mode = 'view';
+        $scope.free = true;
+        $scope.reload = true;
+      } else {
+        displayMessage(false, data.error);
+      }
     }, function () {
       displayMessage(false, 'Ошибка удаления');
     }

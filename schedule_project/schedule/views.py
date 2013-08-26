@@ -6,6 +6,7 @@ import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from schedule.models import Office, Administrator, Room, ScheduleSet, ScheduleRegular, Teacher, Student, Subject, LessonType, DAYS_OF_THE_WEEK
+from schedule.forms import StudentRegisterForm
 from annoying.decorators import ajax_request, render_to
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -15,8 +16,11 @@ from dateutil.relativedelta import relativedelta
 import chromelogger as console
 from django.contrib.auth.decorators import user_passes_test
 
-def is_admin(user):
+def is_admin_user(user):
     return user.is_staff
+
+def is_admin(request):
+    return request.user.is_staff
 
 
 DATE_CODE_FORMAT = '%d%m%Y'
@@ -123,8 +127,8 @@ def get_schedule_and_filters(schedule_mode, date):
     elif schedule_mode == '1':
         schedule = ScheduleRegular
         filters = {
-            'weekday': date.weekday,
-            'time': date.time,
+            'weekday': date.weekday(),
+            'time': date.time(),
         }
     return (schedule, filters)
 
@@ -176,6 +180,12 @@ def parse_room_hour_code(room_hour_code):
     date = parse_datetime(match.group(2))
     return (room_id, date)
 
+def home(request):
+    if is_admin(request):
+        return redirect('/admin-schedule')
+    else:
+        return redirect('/teacher-schedule')
+
 def logout_view(request):
     logout(request)
     return redirect('/login')
@@ -189,6 +199,17 @@ def ajax_apply_settings(request):
             for setting in session_settings:
                 request.session[setting] = json.dumps(session_settings[setting])
     return HttpResponse()
+
+def cant_edit_schedule_error():
+    return {
+    'success': False,
+    'error': 'Вы не можете редактировать расписание по истечении %d дней' % settings.NUMBER_OF_DAYS_ALLOWED_TO_EDIT}
+
+def is_allowed_to_edit(schedule, schedule_mode, request):
+    if schedule_mode == '0' and not is_admin(request):
+        today = datetime.datetime.today()
+        return (today - schedule.date).days <= settings.NUMBER_OF_DAYS_ALLOWED_TO_EDIT
+    return True
 
 @ajax_request
 @login_required
@@ -283,30 +304,26 @@ def ajax_save_schedule(request):
                 return teacher_busy_error()
 
             schedule = schedule(**filters)
-
-
-        def is_allowed_to_edit():
-            if schedule_mode == '0' and not request.user.is_staff:
-                today = datetime.datetime.today()
-                return (today - schedule.date).days <= 3
-            else:
-                return True
-
-        if is_allowed_to_edit():
+        if is_allowed_to_edit(schedule, schedule_mode, request):
             schedule.save()
             schedule.students = get_students()
+            return {'success': True, 'schedule_id': schedule.pk}
         else:
-            return {'success': False, 'error': 'Вы не можете редактировать расписание по истечении 3-х дней'}
-    return {'success': True, 'schedule_id': schedule.pk}
+            return cant_edit_schedule_error()
 
+@ajax_request
 @login_required
 def ajax_delete_schedule(request):
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
         schedule_id = POST.get('schedule_id', None)
         schedule_mode = POST.get('schedule_mode', None)
-        get_schedule(schedule_mode, schedule_id).delete()
-    return HttpResponse()
+        schedule = get_schedule(schedule_mode, schedule_id)
+        if is_allowed_to_edit(schedule, schedule_mode, request):
+            schedule.delete()
+            return {'success': True}
+        else:
+            return cant_edit_schedule_error()
 
 @ajax_request
 @login_required
@@ -340,36 +357,61 @@ def ajax_load_teachers(request):
 @login_required
 def ajax_load_students(request):
     'Returns a List of student names'
-    subject_id = request.GET.get('subject_id', None)
-    students = create_id_value_list_full_name(Student.objects.filter(subjects__pk=subject_id))
+    def get_room():
+        def get_room_id():
+            room_hour_code = request.GET.get('room_hour_code', None)
+            room_and_date = parse_room_hour_code(room_hour_code)
+            return room_and_date[0]
+        return Room.objects.get(pk=get_room_id())
+    def get_office():
+        if is_admin(request):
+            object = get_room()
+        else:
+            object = get_teacher_from_request(request)
+        return object.office
+
+    def get_students():
+        subject_id = request.GET.get('subject_id', None)
+        students = Student.objects.filter(subjects__pk=subject_id, office=get_office())
+        return create_id_value_list_full_name(students)
+
     result = {
-        'students': students,
+        'students': get_students(),
     }
     return result
 
 
-def get_available_rooms(busy_schedules):
+def get_available_rooms(busy_schedules, rooms=None):
     '''
         Returns a List of available rooms.
 
         Keyword arguments:
             busy_schedules -- Schedule QuerySet
+            rooms - Rooms QuerySet
     '''
     def get_busy_rooms(busy_schedules):
         busy_rooms = busy_schedules.values_list('room')
         return [x[0] for x in busy_rooms]
     busy_rooms = get_busy_rooms(busy_schedules)
-    return [x for x in create_id_value_list_full_name(Room.objects.all()) if x['id'] not in busy_rooms]
+    if rooms is None:
+        rooms = Room.objects.all()
+    return [x for x in create_id_value_list_full_name(rooms) if x['id'] not in busy_rooms]
 
 @ajax_request
 @login_required
 def ajax_load_rooms(request):
     'Returns a List of available rooms.'
+
+    def get_rooms():
+        office = get_teacher_from_request(request).office
+        return Room.objects.filter(office=office)
+
     schedule_mode = request.GET.get('schedule_mode', None)
     hour_code = request.GET.get('hour_code', None)
     date = parse_datetime(hour_code)
     busy_schedules = filter_schedules_by_date(schedule_mode, date)
-    return get_available_rooms(busy_schedules)
+
+    return get_available_rooms(busy_schedules, get_rooms())
 
 @ajax_request
 @login_required
@@ -477,11 +519,11 @@ def ajax_load_admin_schedule(request, date):
             subjects = subjects.filter(pk__in=Student.objects.get(pk=student).subjects.all())
         return create_id_value_list(subjects)
 
-    def get_custom_free_time(free_time):
+    def get_custom_time_selection(time):
         output = []
         rooms = Room.objects.all()
-        for day in free_time:
-            for hour in free_time[day]:
+        for day in time:
+            for hour in time[day]:
                 for room in rooms:
                     date = start_date + datetime.timedelta(days=int(day))
                     code = '%d_%s_%s' % (room.pk, date.strftime(DATE_CODE_FORMAT), hour)
@@ -494,18 +536,20 @@ def ajax_load_admin_schedule(request, date):
     lesson_type = request.GET.get('lesson_type', '')
     filters = {}
     filters_subjects = {}
-    free_time = None
+    teacher_time = None
+    student_time = None
 
     start_date = get_start_date(parse_date(date))
     end_date = get_end_date(start_date)
 
     if teacher != '':
         filters['teacher__pk'] = teacher
-        free_time = get_custom_free_time(Teacher.objects.get(pk=teacher).free_time)
+        teacher_time = get_custom_time_selection(Teacher.objects.get(pk=teacher).free_time)
     if lesson_type != '':
         filters['lesson_type__pk'] = lesson_type
     if student != '':
         filters['students__pk'] = student
+        student_time = get_custom_time_selection(Student.objects.get(pk=student).time_preference)
     if subject != '':
         filters['subject__pk'] = subject
         filters_subjects['subjects__pk'] = subject
@@ -518,7 +562,8 @@ def ajax_load_admin_schedule(request, date):
         'students': get_students_filter(),
         'subjects': get_subjects_filter(),
         'lesson_types': get_lesson_types_filter(),
-        'free_time': free_time,
+        'teacher_time': teacher_time,
+        'student_time': student_time,
     }
     return result
 
@@ -583,15 +628,11 @@ def get_all_lesson_types():
     output = create_id_value_list(LessonType.objects.all())
     return json.dumps(output)
 
-def get_all_subjects():
-    output = create_id_value_list(Subject.objects.all())
-    return json.dumps(output)
-
 def initialize_mode_setting(session):
     if 'mode' not in session:
         session['mode'] = 0
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin_user)
 @render_to('admin-schedule.html')
 @login_required
 def admin_schedule(request, date=None):
@@ -644,6 +685,10 @@ def admin_schedule(request, date=None):
         hours = get_generic_hour_range()
         return list(chunks(hours, 4))
 
+    def get_all_subjects():
+        output = create_id_value_list(Subject.objects.all())
+        return json.dumps(output)
+
     initialize_settings()
     hours = get_hours_ranges()
     start_date = get_start_date_for_schedule(date)
@@ -658,6 +703,9 @@ def admin_schedule(request, date=None):
         'start_dates': get_start_dates(start_date),
     }
 
+def get_teacher_from_request(request):
+    return Teacher.objects.get(user=request.user)
+
 @render_to('teacher-schedule.html')
 @login_required
 def teacher_schedule(request, date=None):
@@ -665,19 +713,18 @@ def teacher_schedule(request, date=None):
     hours = get_generic_hour_range()
     start_date = get_start_date_for_schedule(date)
 
+    def get_subjects():
+        teacher = get_teacher_from_request(request)
+        output = create_id_value_list(teacher.subjects.all())
+        return json.dumps(output)
+
     return {
         'hours': hours,
         'dates': get_date_range(start_date),
         'start_dates': get_start_dates(start_date),
         'lesson_types': get_all_lesson_types(), #data for modal form
-        'subjects': get_all_subjects(), #data for modal form
+        'subjects': get_subjects(), #data for modal form
     }
-
-@ajax_request
-@login_required
-def ajax_load_free_time(request):
-    free_time = Teacher.objects.get(user=request.user).free_time
-    return {'time': free_time}
 
 
 @ajax_request
@@ -687,7 +734,7 @@ def ajax_save_free_time(request):
         POST = request.POST
         if 'free_time' in POST:
             free_time = POST.get('free_time')
-            teacher = Teacher.objects.get(user=request.user)
+            teacher = get_teacher_from_request(request)
             teacher.free_time = free_time
             teacher.save()
     return HttpResponse()
@@ -720,12 +767,14 @@ def ajax_make_regular(request):
 @render_to('free-time.html')
 @login_required
 def free_time(request):
-    hours = get_generic_hour_range()
+    free_time = get_teacher_from_request(request).free_time
 
     return {
-        'hours': hours,
+        'hours': get_generic_hour_range(),
         'days': DAYS_OF_THE_WEEK,
+        'time': json.dumps(free_time),
     }
+
 
 @login_required
 def ajax_demand_replacement(request):
@@ -734,3 +783,34 @@ def ajax_demand_replacement(request):
     schedule.replacement_demand = True
     schedule.save()
     return HttpResponse()
+
+
+@render_to('register-student.html')
+def student_registration(request, by_student=False):
+    message = ''
+    user_message = None
+    form = StudentRegisterForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        if by_student:
+            form = None
+            user_message = 'Спасибо за регистрацию. Наш администратор свяжется с Вами в ближайшее время.'
+        else:
+            form = StudentRegisterForm()
+            message = 'Ученик успешно добавлен'
+    return {
+        'form': form,
+        'message': message,
+        'user_message': user_message,
+        'hours': get_generic_hour_range(),
+        'days': DAYS_OF_THE_WEEK,}
+
+
+@render_to('register-student.html')
+@login_required
+def add_student(request):
+    return student_registration(request)
+
+@render_to('register-student.html')
+def register_student(request):
+    return student_registration(request, True)

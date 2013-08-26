@@ -1,34 +1,47 @@
+{% load menu %}{% generate_menu %}
+
 <!DOCTYPE html>
 <html ng-app="schedule">
 <head>
   <title>{% block title %}Schedule{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/libs/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/libs/bootstrap/css/bootstrap-responsive.min.css">
   <link rel="stylesheet" href="/static/libs/select2/select2.css" />
+  <link rel="stylesheet" href="/static/css/select2-bootstrap.css" />
+  <link rel="stylesheet" href="/static/libs/font-awesome/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="/static/libs/messenger/messenger.css" />
+  <link rel="stylesheet" href="/static/libs/messenger/messenger-theme-future.css" />
 
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+
+
+  <script src="/static/libs/jquery/jquery-2.0.3.min.js"></script>
+  <script src="/static/libs/bootstrap/js/bootstrap.min.js"></script>
+
   <script src="/static/libs/spin_js/spin.min.js"></script>
   <script src="/static/libs/spin_js/jquery.spin.js"></script>
+
+  <script src="/static/libs/jquery/jquery_ui/jquery-ui-1.10.3.min.js"></script>
+  <link rel="stylesheet" href="/static/libs/jquery/jquery_ui/jquery-ui-1.10.0.bootstrap.css" />
+  <script src="/static/libs/jquery/jquery_ui/jquery.ui.datepicker-ru.min.js"></script>
 
   <script src="/static/libs/select2/select2.min.js"></script>
   <script src="/static/libs/select2/select2_locale_ru.js"></script>
 
-  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.10/backbone-min.js"></script>
-  <link rel="stylesheet" href="/static/libs/messenger/messenger.css" />
-  <link rel="stylesheet" href="/static/libs/messenger/messenger-theme-future.css" />
+  <script src="/static/libs/underscore/underscore-min.js"></script>
+  <script src="/static/libs/backbone/backbone-min.js"></script>
   <script src="/static/libs/messenger/messenger.min.js"></script>
   <script src="/static/libs/messenger/messenger-theme-future.js"></script>
 
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0rc1/angular.min.js"></script>
-  <script src="http://code.angularjs.org/1.2.0rc1/angular-resource.min.js"></script>
-  <script src="http://code.angularjs.org/1.2.0rc1/angular-route.min.js"></script>
+  <script src="/static/libs/angular/angular.min.js"></script>
+  <script src="/static/libs/angular/angular-resource.min.js"></script>
+  <script src="/static/libs/angular/angular-route.min.js"></script>
 
-  <script src="/static/js/ui-bootstrap-tpls-0.5.0.min.js"></script>
-  <script src="/static/js/angular-ui-select2.js"></script>
+  <script src="/static/libs/angular/ui-bootstrap-tpls-0.5.0.min.js"></script>
+  <script src="/static/libs/angular/angular-ui-select2.js"></script>
 
   <script src="/static/js/main.js"></script>
   <script src="/static/js/ajax_loading.js"></script>
@@ -40,17 +53,24 @@
 </head>
 <body>
   <div class="container">
-    <div class="navbar">
-      <div class="navbar-inner">
-        <a class="brand active" href="/">Schedule</a>
+    {% if not request.user.is_anonymous %}
+      <div class="navbar">
+        <div class="navbar-inner">
+          <a class="brand" href="/">Расписание</a>
+          <ul class="nav">
+            {% if not request.user.is_staff %}
+              {% with menu=menus.main %}{% include 'bootstrap-navbar.html' %}{% endwith %}
+            {% endif %}
+          </ul>
           <ul class="nav pull-right">
             <li><a href="/logout">Выход</a></li>
           </ul>
-        <ul class="nav pull-right">
-          <li><div id="loading"></div></li>
-        </ul>
+          <ul class="nav pull-right">
+            <li><div id="loading"></div></li>
+          </ul>
+        </div>
       </div>
-    </div>
+    {% endif %}
     <div id="content">
         {% block content %}{% endblock %}
     </div>

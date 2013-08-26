@@ -242,9 +242,13 @@ function DialogController($scope, dialog, free, hour_code, schedule_id, schedule
       schedule_mode: schedule_mode,
     };
     ScheduleDelete.post($.param(params), function (data) {
-      $scope.mode = 'view';
-      $scope.free = true;
-      $scope.reload = true;
+      if (data.success) {
+        $scope.mode = 'view';
+        $scope.free = true;
+        $scope.reload = true;
+      } else {
+        displayMessage(false, data.error);
+      }
     }, function () {
       displayMessage(false, 'Ошибка удаления');
     }

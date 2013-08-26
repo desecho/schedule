@@ -42,7 +42,7 @@
         </div>
         <div class="control-group">
           <div class="controls">
-            <button ng-click="save()" ng-disabled="form.$invalid" class="btn btn-primary">Сохранить</button>
+            <button ng-click="save()" ng-disabled="form.$invalid" class="btn btn-success"><i class="icon-save icon-white"></i> Сохранить</button>
           </div>
         </div>
       </form>
@@ -65,8 +65,8 @@
   <div class="modal-footer">
     <button ng-click="demand_replacement()" class="btn btn-primary" ng-switch-when="view" ng-hide="free">Замена</button>
     <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">В постоянное</button>
-    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view">Изменить</button>
-    <button ng-click="delete()" ng-hide="free" class="btn btn-primary">Удалить</button>
+    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view"><i class="icon-pencil icon-white"></i> Изменить</button>
+    <button ng-click="delete()" ng-hide="free" class="btn btn-danger"><i class="icon-trash icon-white"></i> Удалить</button>
     <button ng-click="close()" class="btn btn-primary">Закрыть</button>
   </div>
 </div>

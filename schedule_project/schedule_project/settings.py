@@ -149,6 +149,8 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'schedule',
     'weekday_field',
+    'menu',
+    'bootstrap_toolkit',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -191,7 +193,10 @@ LOGIN_URL = '/login/'
 
 WORK_TIME = (8, 19)
 TIME_FORMAT = '%H:00'
-DATETIME_FORMAT = '%d.%m.%Y ' + TIME_FORMAT
+DATE_FORMAT = '%d.%m.%Y'
+DATETIME_FORMAT = DATE_FORMAT + ' ' + TIME_FORMAT
+# Number of days it is allowed to edit schedule for teachers
+NUMBER_OF_DAYS_ALLOWED_TO_EDIT = 3
 
 try:
     LOCAL_SETTINGS

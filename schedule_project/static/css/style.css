@@ -37,7 +37,7 @@
 }
 
 .room-table td:hover , .hour-table td:hover{
-    background-color: lightblue;
+    background-color: #CEE3F6;
 }
 
 .room-table {
@@ -55,8 +55,25 @@
     width: 200px;
 }
 
-.free-hour {
+#s2id_id_subjects {
+    width: 220px;
+}
+
+.teacher-hour, .free-hour {
     background-color: #F3E2A9;
+}
+
+.free-hour {
+    background-color: #3875d7;
+}
+
+
+.student-hour {
+    background-color: #F3F781;
+}
+
+.teacher-student-hour {
+    background-color: #F5A9F2;
 }
 
 .schedule-table{

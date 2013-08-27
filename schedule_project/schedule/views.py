@@ -16,6 +16,9 @@ from dateutil.relativedelta import relativedelta
 import chromelogger as console
 from django.contrib.auth.decorators import user_passes_test
 
+def is_superadmin_user(user):
+    return user.is_superuser
+
 def is_admin_user(user):
     return user.is_staff
 
@@ -550,7 +553,7 @@ def ajax_load_admin_schedule(request, date):
         filters['lesson_type__pk'] = lesson_type
     if student != '':
         filters['students__pk'] = student
-        student_time = get_custom_time_selection(Student.objects.get(pk=student).time_preference)
+        student_time = get_custom_time_selection(Student.objects.get(pk=student).free_time)
     if subject != '':
         filters['subject__pk'] = subject
         filters_subjects['subjects__pk'] = subject
@@ -633,9 +636,16 @@ def initialize_mode_setting(session):
     if 'mode' not in session:
         session['mode'] = 0
 
+@user_passes_test(is_superadmin_user)
+@render_to('students-free-time.html')
+def students_free_time(request):
+    return {
+        'students': Student.objects.all()
+    }
+
+
 @user_passes_test(is_admin_user)
 @render_to('admin-schedule.html')
-@login_required
 def admin_schedule(request, date=None):
     def initialize_settings():
         if 'filters' not in request.session:
@@ -730,14 +740,17 @@ def teacher_schedule(request, date=None):
 
 @ajax_request
 @login_required
-def ajax_save_free_time(request):
+def ajax_save_free_time(request, student_id):
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
         if 'free_time' in POST:
             free_time = POST.get('free_time')
-            teacher = get_teacher_from_request(request)
-            teacher.free_time = free_time
-            teacher.save()
+            if request.user.is_superuser:
+                object = Student.objects.get(pk=student_id)
+            else:
+                object = get_teacher_from_request(request)
+            object.free_time = free_time
+            object.save()
     return HttpResponse()
 
 @ajax_request
@@ -765,15 +778,19 @@ def ajax_make_regular(request):
     schedule_regular.students = schedule.students.all()
     return {'success': True}
 
+
 @render_to('free-time.html')
 @login_required
-def free_time(request):
-    free_time = get_teacher_from_request(request).free_time
-
+def free_time(request, student_id=0):
+    if student_id == 0:
+        free_time = get_teacher_from_request(request).free_time
+    else:
+        free_time = Student.objects.get(pk=student_id).free_time
     return {
         'hours': get_generic_hour_range(),
         'days': DAYS_OF_THE_WEEK,
         'time': json.dumps(free_time),
+        'student_id': student_id,
     }
 
 

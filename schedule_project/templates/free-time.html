@@ -1,20 +1,21 @@
 {% extends "base.html" %}
 {% block javascript %}
-<script>
-    var time = jQuery.parseJSON('{{ time|safe  }}');
-</script>
-<script src="/static/js/time_selection.js"></script>
+    <script>
+        var time = jQuery.parseJSON('{{ time|safe  }}');
+        var student_id = {{ student_id }};
+    </script>
+    <script src="/static/js/time_selection.js"></script>
 {% endblock %}
 
 {% block content %}
-<div ng-controller="TimeSelectionController">
+    <div ng-controller="TimeSelectionController">
 
-{% include 'time-selection-table.html' %}
+        {% include 'time-selection-table.html' %}
 
-<div class="btn-group">
-  <button ng-click="save()" class="btn">Сохранить</button>
-  <button ng-click="reset()" class="btn">Сбросить</button>
-</div>
+        <div class="btn-group">
+          <button ng-click="save()" class="btn">Сохранить</button>
+          <button ng-click="reset()" class="btn">Сбросить</button>
+        </div>
 
-</div>
+    </div>
 {% endblock %}

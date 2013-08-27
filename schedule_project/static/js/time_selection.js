@@ -1,7 +1,12 @@
+var save_url = '/save-free-time/' + student_id + '/';
+
 angular.module('freeTimeSave', ['ngResource']).
   factory('FreeTimeSave', function($resource) {
-    return $resource('/save-free-time/', {}, {
-      post: {method: 'POST', headers: headers}
+    return $resource(save_url, {}, {
+      post: {
+        method: 'POST',
+        headers: headers
+      }
     });
   });
 
@@ -83,12 +88,12 @@ function TimeSelectionController($scope, FreeTimeSave) {
   // Register student
 
   $scope.submitForm = function(){
-    $('#id_time_preference').val($scope.result);
+    $('#id_free_time').val($scope.result);
     if ($('form').valid()) {
       $('form').submit();
     }
   };
 
-  if (typeof $('#id_time_preference').val() !== 'undefined') load($.parseJSON($('#id_time_preference').val()));
+  if (typeof $('#id_free_time').val() !== 'undefined') load($.parseJSON($('#id_free_time').val()));
 
 }

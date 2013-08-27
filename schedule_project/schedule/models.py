@@ -91,7 +91,7 @@ class Student(models.Model):
     parents_phone = models.CharField('телефон родителей', max_length=255, blank=True, null=True)
     email = models.EmailField('email', null=True, blank=True)
     birthday = models.DateField('дата рождения')
-    time_preference = JSONField('желаемое время', default=EMPTY_FREE_TIME_JSON)
+    free_time = JSONField('желаемое время', default=EMPTY_FREE_TIME_JSON)
     passport_number = models.CharField('паспорт, серия/номер', max_length=15, blank=True, null=True)
     passport_authority = models.CharField('паспорт, кем выдан', max_length=255, blank=True, null=True)
     passport_issued_date = models.DateField('паспорт, дата выдачи', blank=True, null=True)

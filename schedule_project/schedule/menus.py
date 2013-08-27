@@ -14,6 +14,11 @@ Menu.add_item('admin', MenuItem('Добавить ученика',
     reverse('schedule.views.add_student'),
     weight=50,))
 
+Menu.add_item('superadmin', MenuItem('Свободное время учеников',
+    reverse('schedule.views.students_free_time'),
+    weight=70,))
+
+
 # Menu.add_item('main', MenuItem('К просмотру',
 #     reverse('movies.views.list', kwargs=({'list': 'to-watch'})),
 #     weight=10,))

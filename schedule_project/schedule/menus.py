@@ -2,8 +2,16 @@
 from menu import Menu, MenuItem
 from django.core.urlresolvers import reverse
 
-Menu.add_item('main', MenuItem('Свободное время',
+Menu.add_item('teacher', MenuItem('Свободное время',
     reverse('schedule.views.free_time'),
+    weight=10,))
+
+Menu.add_item('teacher', MenuItem('Добавить ученика',
+    reverse('schedule.views.add_student'),
+    weight=20,))
+
+Menu.add_item('admin', MenuItem('Добавить ученика',
+    reverse('schedule.views.add_student'),
     weight=10,))
 
 # Menu.add_item('main', MenuItem('К просмотру',

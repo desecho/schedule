@@ -58,8 +58,13 @@
         <div class="navbar-inner">
           <a class="brand" href="/">Расписание</a>
           <ul class="nav">
-            {% if not request.user.is_staff %}
-              {% with menu=menus.main %}{% include 'bootstrap-navbar.html' %}{% endwith %}
+            {% if request.user.is_staff %}
+              <li>
+                <a href="/admin">Администрировать</a>
+              </li>
+              {% with menu=menus.admin %}{% include 'bootstrap-navbar.html' %}{% endwith %}
+            {% else %}
+              {% with menu=menus.teacher %}{% include 'bootstrap-navbar.html' %}{% endwith %}
             {% endif %}
           </ul>
           <ul class="nav pull-right">

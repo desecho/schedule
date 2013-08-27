@@ -363,6 +363,7 @@ def ajax_load_students(request):
             room_and_date = parse_room_hour_code(room_hour_code)
             return room_and_date[0]
         return Room.objects.get(pk=get_room_id())
+
     def get_office():
         if is_admin(request):
             object = get_room()
@@ -372,7 +373,7 @@ def ajax_load_students(request):
 
     def get_students():
         subject_id = request.GET.get('subject_id', None)
-        students = Student.objects.filter(subjects__pk=subject_id, office=get_office())
+        students = Student.objects.filter(subjects__pk=subject_id, offices__pk=get_office().pk)
         return create_id_value_list_full_name(students)
 
     result = {

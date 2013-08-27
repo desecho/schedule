@@ -28,10 +28,12 @@ urlpatterns = patterns('',
     url(r'^delete-schedule$', 'schedule.views.ajax_delete_schedule'),
     url(r'^load-hour-details$', 'schedule.views.ajax_load_hour_details'),
     url(r'^make-regular$', 'schedule.views.ajax_make_regular'),
-
+    url(r'^students-free-time$', 'schedule.views.students_free_time'),
 
     url(r'^free-time$', 'schedule.views.free_time'),
+    url(r'^free-time/(?P<student_id>\d+)$', 'schedule.views.free_time'),
     url(r'^save-free-time$', 'schedule.views.ajax_save_free_time'),
+    url(r'^save-free-time/(?P<student_id>\d+)$', 'schedule.views.ajax_save_free_time'),
 
     url(r'^register-student$', 'schedule.views.register_student'),
     url(r'^add-student$', 'schedule.views.add_student'),

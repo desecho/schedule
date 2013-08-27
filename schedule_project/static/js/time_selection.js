@@ -59,6 +59,7 @@ function TimeSelectionController($scope, FreeTimeSave) {
 
   $scope.reset = function(){
     $('.hour').removeClass(class_name);
+    $scope.result = empty_time;
   };
 
   $scope.mouse_down = function(event){
@@ -88,6 +89,6 @@ function TimeSelectionController($scope, FreeTimeSave) {
     }
   };
 
-  if (typeof $('#id_time_preference') !== 'undefined') load($.parseJSON($('#id_time_preference').val()));
+  if (typeof $('#id_time_preference').val() !== 'undefined') load($.parseJSON($('#id_time_preference').val()));
 
 }

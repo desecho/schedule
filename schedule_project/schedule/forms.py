@@ -20,6 +20,9 @@ def text_widget():
     return forms.TextInput(attrs={'required': ''})
 
 def date_widget():
+    return forms.DateInput(format=settings.DATE_FORMAT)
+
+def date_widget_required():
     return forms.DateInput(format=settings.DATE_FORMAT, attrs={'required': ''})
 
 def email_widget():
@@ -28,14 +31,11 @@ def email_widget():
 def multiple_select_widget():
     return forms.SelectMultiple(attrs={'required': ''})
 
-def select_widget():
-    return forms.Select(attrs={'required': ''})
-
-
 class StudentRegisterForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(StudentRegisterForm, self).__init__(*args, **kwargs)
         self.fields['subjects'].help_text = ''
+        self.fields['offices'].help_text = ''
 
     class Meta:
         model = Student
@@ -44,15 +44,11 @@ class StudentRegisterForm(forms.ModelForm):
             'last_name': text_widget(),
             'middle_name': text_widget(),
             'phone': text_widget(),
-            'parents_phone': text_widget(),
-            'birthday': date_widget(),
+            'birthday': date_widget_required(),
             'email': email_widget(),
             'subjects': multiple_select_widget(),
-            'office': select_widget(),
-            'passport_number': text_widget(),
-            'passport_authority': text_widget(),
+            'offices': multiple_select_widget(),
             'passport_issued_date': date_widget(),
-            'passport_unit': text_widget(),
             'level': forms.TextInput(attrs={
                 'pattern': '\d',
                 'maxlength': '1',

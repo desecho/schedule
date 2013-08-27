@@ -12,7 +12,7 @@ Menu.add_item('teacher', MenuItem('Добавить ученика',
 
 Menu.add_item('admin', MenuItem('Добавить ученика',
     reverse('schedule.views.add_student'),
-    weight=10,))
+    weight=50,))
 
 # Menu.add_item('main', MenuItem('К просмотру',
 #     reverse('movies.views.list', kwargs=({'list': 'to-watch'})),

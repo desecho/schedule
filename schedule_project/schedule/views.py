@@ -25,6 +25,9 @@ def is_admin_user(user):
 def is_admin(request):
     return request.user.is_staff
 
+def is_superadmin(request):
+    return request.user.is_superuser
+
 
 DATE_CODE_FORMAT = '%d%m%Y'
 DATE_HOUR_CODE_FORMAT = DATE_CODE_FORMAT + '_%H'
@@ -481,7 +484,7 @@ def get_date_from_schedule(schedule_mode, schedule, start_date):
 
 #2do continue commenting
 @ajax_request
-@login_required
+@user_passes_test(is_admin_user)
 def ajax_load_admin_schedule(request, date):
     def get_filtered_schedules(schedule_mode, start_date, end_date):
         schedules = get_all_schedules(schedule_mode, start_date, end_date)
@@ -504,19 +507,25 @@ def ajax_load_admin_schedule(request, date):
         return output
 
     def get_teachers_filter():
-        teachers = Teacher.objects.filter(**filters_subjects)
+        teachers = Teacher.objects.filter(**filters_subjects).order_by('last_name')
         return create_id_value_list_full_name(teachers)
 
     def get_students_filter():
-        students = Student.objects.filter(**filters_subjects)
+        def get_admin_office():
+            return Administrator.objects.get(user=request.user).office.pk
+
+        students = Student.objects.filter(**filters_subjects).order_by('last_name')
+        if not is_superadmin(request):
+            students = students.filter(offices__pk=get_admin_office())
+
         return create_id_value_list_full_name(students)
 
     def get_lesson_types_filter():
-        lesson_types = LessonType.objects.all()
+        lesson_types = LessonType.objects.all().order_by('name')
         return create_id_value_list(lesson_types)
 
     def get_subjects_filter():
-        subjects = Subject.objects.all()
+        subjects = Subject.objects.all().order_by('name')
         if teacher != '':
             subjects = subjects.filter(pk__in=Teacher.objects.get(pk=teacher).subjects.all())
         if student != '':

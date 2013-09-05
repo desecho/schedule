@@ -1,16 +1,15 @@
 {% extends "base.html" %}
 {% load bootstrap_toolkit %}
 {% block javascript %}
-    <script>
-      var message = '{{ message }}';
-    </script>
-    <script src="/static/js/time_selection.js"></script>
-    <script src="/static/js/register-student.js"></script>
-    <script src="/static/libs/jquery/jquery.validate/jquery.validate.min.js"></script>
-    <script src="/static/libs/jquery/jquery.validate/messages_ru.js"></script>
-
+  <script>
+    var message = '{{ message }}';
+    var student_registration = true;
+  </script>
+  <script src="/static/js/time_selection.js"></script>
+  <script src="/static/js/register-student.js"></script>
+  <script src="/static/libs/jquery/jquery.validate/jquery.validate.min.js"></script>
+  <script src="/static/libs/jquery/jquery.validate/messages_ru.js"></script>
 {% endblock %}
-
 
 {% block content %}
 <br><br>

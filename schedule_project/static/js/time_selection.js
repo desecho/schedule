@@ -1,5 +1,8 @@
-var save_url = '/save-free-time/' + student_id + '/';
+if (student_registration) {
+  student_id = '';
+}
 
+var save_url = '/save-free-time/' + student_id + '/';
 angular.module('freeTimeSave', ['ngResource']).
   factory('FreeTimeSave', function($resource) {
     return $resource(save_url, {}, {

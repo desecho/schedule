@@ -1,4 +1,4 @@
-if (student_registration) {
+if (typeof(student_registration) != 'undefined') {
   student_id = '';
 }
 

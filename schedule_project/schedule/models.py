@@ -158,6 +158,10 @@ class ScheduleSet(models.Model):
     def __unicode__(self):
         return '%s - %s - %s' % (self.date.strftime(settings.DATETIME_FORMAT), self.teacher.get_full_name(), self.room.get_full_name())
 
+    # def save(self, *args, **kwargs):
+    #     super(ScheduleSet, self).save(*args, **kwargs)
+
+
 
 class ScheduleRegular(models.Model):
     teacher = models.ForeignKey(Teacher, verbose_name='учитель')

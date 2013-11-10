@@ -613,7 +613,7 @@ def get_generic_hour_range():
     hours = [str(x).zfill(2) for x in hours]
     return hours
 
-def get_start_date_for_schedule(date):
+def get_start_date_for_schedule(date=None):
     if date is not None:
         date = parse_date(date)
     else:

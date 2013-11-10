@@ -189,6 +189,8 @@ def parse_room_hour_code(room_hour_code):
 def home(request):
     if is_admin(request):
         return redirect('/admin-schedule')
+    elif request.user.is_anonymous():
+        return redirect('/login')
     else:
         return redirect('/teacher-schedule')
 

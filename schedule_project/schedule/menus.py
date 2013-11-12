@@ -12,10 +12,10 @@ Menu.add_item('teacher', MenuItem('Добавить ученика',
 
 Menu.add_item('admin', MenuItem('Добавить ученика',
     reverse('schedule.views.add_student'),
-    weight=50,))
+    weight=10,))
 
-Menu.add_item('superadmin', MenuItem('Свободное время учеников',
-    reverse('schedule.views.students_free_time'),
+Menu.add_item('admin', MenuItem('Администрировать учеников',
+    reverse('schedule.views.edit_students'),
     weight=70,))
 
 

@@ -28,6 +28,8 @@ def is_admin(request):
 def is_superadmin(request):
     return request.user.is_superuser
 
+def get_admin_office(request):
+    return Administrator.objects.get(user=request.user).office.pk
 
 DATE_CODE_FORMAT = '%d%m%Y'
 DATE_HOUR_CODE_FORMAT = DATE_CODE_FORMAT + '_%H'
@@ -513,12 +515,9 @@ def ajax_load_admin_schedule(request, date):
         return create_id_value_list_full_name(teachers)
 
     def get_students_filter():
-        def get_admin_office():
-            return Administrator.objects.get(user=request.user).office.pk
-
         students = Student.objects.filter(**filters_subjects).order_by('last_name')
         if not is_superadmin(request):
-            students = students.filter(offices__pk=get_admin_office())
+            students = students.filter(offices__pk=get_admin_office(request))
 
         return create_id_value_list_full_name(students)
 
@@ -647,11 +646,14 @@ def initialize_mode_setting(session):
     if 'mode' not in session:
         session['mode'] = 0
 
-@user_passes_test(is_superadmin_user)
-@render_to('students-free-time.html')
-def students_free_time(request):
+@user_passes_test(is_admin_user)
+@render_to('edit-students.html')
+def edit_students(request):
+    students = Student.objects.all()
+    if not is_superadmin(request):
+        students = students.filter(offices__pk=get_admin_office(request))
     return {
-        'students': Student.objects.all()
+        'students': students.order_by('last_name')
     }
 
 
@@ -792,16 +794,54 @@ def ajax_make_regular(request):
 
 @render_to('free-time.html')
 @login_required
-def free_time(request, student_id=0):
-    if student_id == 0:
-        free_time = get_teacher_from_request(request).free_time
-    else:
-        free_time = Student.objects.get(pk=student_id).free_time
+def free_time(request):
+    free_time = get_teacher_from_request(request).free_time
     return {
         'hours': get_generic_hour_range(),
         'days': DAYS_OF_THE_WEEK,
         'time': json.dumps(free_time),
-        'student_id': student_id,
+    }
+
+@user_passes_test(is_admin_user)
+@render_to('edit-student.html')
+@login_required
+def edit_student(request, id):
+    #insert code to protect from admins editing wrong students
+    message = ''
+    student = Student.objects.get(pk=id)
+    if request.method == 'POST':
+        form = StudentRegisterForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save()
+            message = 'Данные сохранены'
+    else:
+        form_initial_data = {
+            'name': student.name,
+            'last_name': student.last_name,
+            'middle_name': student.middle_name,
+            'phone': student.phone,
+            'parents_phone': student.parents_phone,
+            'email': student.email,
+            'birthday': student.birthday,
+            'passport_number': student.passport_number,
+            'passport_authority': student.passport_authority,
+            'passport_issued_date': student.passport_issued_date,
+            'passport_unit': student.passport_unit,
+            'level': student.level,
+            'subjects': student.subjects.all(),
+            'offices': student.offices.all(),
+            'olympiad_participation_plans': student.olympiad_participation_plans,
+            'foreign_trip_plans': student.foreign_trip_plans,
+            'registration_date': student.registration_date
+        }
+        form = StudentRegisterForm(initial=form_initial_data)
+    return {
+        'form': form,
+        'hours': get_generic_hour_range(),
+        'days': DAYS_OF_THE_WEEK,
+        'time': json.dumps(student.free_time),
+        'student_id': id,
+        'message': message,
     }
 
 

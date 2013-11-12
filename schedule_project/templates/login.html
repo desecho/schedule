@@ -1,6 +1,9 @@
 {% extends "base.html" %}
-{% block content %}
+{% block javascript %}
+    <script src="/static/js/angular_init.js"></script>
+{% endblock %}
 
+{% block content %}
 <form method="post" action="{% url 'django.contrib.auth.views.login' %}" class="form-horizontal" id="login-form">
   {% csrf_token %}
   <div class="control-group">

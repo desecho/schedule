@@ -1,5 +1,5 @@
-if (typeof(student_registration) != 'undefined') {
-  student_id = '';
+if (typeof(teachers_free_time) != 'undefined') {
+  student_id = 0;
 }
 
 var save_url = '/save-free-time/' + student_id + '/';
@@ -38,7 +38,7 @@ function TimeSelectionController($scope, FreeTimeSave) {
         var hour = match[2];
         return [day, hour];
       }
-      var time = empty_time;
+      var time = jQuery.extend(true, {}, empty_time);
       $.each($('.free-hour'), function(id, element) {
         id = $(element).attr('id');
         day_and_hour = parse_day_and_hour(id);

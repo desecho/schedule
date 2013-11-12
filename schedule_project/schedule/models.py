@@ -59,7 +59,7 @@ class Teacher(models.Model):
         verbose_name_plural = 'учителя'
 
     def get_full_name(self):
-        return '%s %s' % (self.name, self.last_name)
+        return '%s %s' % (self.last_name, self.name)
 
     def __unicode__(self):
         return self.get_full_name()
@@ -77,7 +77,7 @@ class Administrator(models.Model):
         verbose_name_plural = 'администраторы'
 
     def get_full_name(self):
-        return '%s %s' % (self.name, self.last_name)
+        return '%s %s' % (self.last_name, self.name)
 
     def __unicode__(self):
         return self.get_full_name()
@@ -109,7 +109,7 @@ class Student(models.Model):
         verbose_name_plural = 'ученики'
 
     def get_full_name(self):
-        return '%s %s' % (self.name, self.last_name)
+        return '%s %s' % (self.last_name, self.name)
 
     def __unicode__(self):
         return self.get_full_name()

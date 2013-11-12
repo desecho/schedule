@@ -59,11 +59,11 @@
           <a class="brand" href="/">Расписание</a>
           <ul class="nav">
             {% if request.user.is_staff %}
-              <li>
-                <a href="/admin">Администрировать</a>
-              </li>
               {% with menu=menus.admin %}{% include 'bootstrap-navbar.html' %}{% endwith %}
               {% if request.user.is_superuser %}
+                <li>
+                  <a href="/admin">Администрировать</a>
+                </li>
                 {% with menu=menus.superadmin %}{% include 'bootstrap-navbar.html' %}{% endwith %}
               {% endif %}
             {% else %}

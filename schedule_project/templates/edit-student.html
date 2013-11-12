@@ -3,7 +3,8 @@
 {% block javascript %}
   <script>
     var message = '{{ message }}';
-    var teachers_free_time = true;
+    var time = jQuery.parseJSON('{{ time|safe  }}');
+    var student_id = {{ student_id }};
   </script>
   <script src="/static/js/time_selection.js"></script>
   <script src="/static/js/register-student.js"></script>

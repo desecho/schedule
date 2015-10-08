@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 
 from dateutil.relativedelta import relativedelta
-import chromelogger as console
+# import chromelogger as console
 from django.contrib.auth.decorators import user_passes_test
 
 def is_superadmin_user(user):

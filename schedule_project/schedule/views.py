@@ -213,7 +213,7 @@ def ajax_apply_settings(request):
 def cant_edit_schedule_error():
     return {
     'success': False,
-    'error': 'Вы не можете редактировать расписание по истечении %d дней' % settings.NUMBER_OF_DAYS_ALLOWED_TO_EDIT}
+    'error': "You can't edit schedule after %d days" % settings.NUMBER_OF_DAYS_ALLOWED_TO_EDIT}
 
 def is_allowed_to_edit(schedule, schedule_mode, request):
     if schedule_mode == '0' and not is_admin(request):
@@ -268,10 +268,10 @@ def ajax_save_schedule(request):
         return (room, date)
 
     def cabinet_busy_error():
-        return {'success': False, 'error': 'Кабинет на это время уже занят'}
+        return {'success': False, 'error': 'Room is busy at that time'}
 
     def teacher_busy_error():
-        return {'success': False, 'error': 'Учитель в это время занят'}
+        return {'success': False, 'error': 'Teacher is busy at that time'}
 
     if request.is_ajax() and request.method == 'POST':
         POST = request.POST
@@ -781,11 +781,11 @@ def ajax_make_regular(request):
     }
     schedule_regular = ScheduleRegular
     if has_conflicts_on_adding('self', schedule_regular, dict(data)):
-        return {'success': False, 'error': 'Этот урок уже назначен постоянным'}
+        return {'success': False, 'error': 'This lesson is already set as regular'}
     if has_conflicts_on_adding('room', schedule_regular, dict(data)):
-        return {'success': False, 'error': 'Кабинет на это время уже занят'}
+        return {'success': False, 'error': 'Room is busy at that time'}
     if has_conflicts_on_adding('teacher', schedule_regular, dict(data)):
-        return {'success': False, 'error': 'Учитель в это время занят'}
+        return {'success': False, 'error': 'Teacher is busy at that time'}
     schedule_regular = schedule_regular(**data)
     schedule_regular.save()
     schedule_regular.students = schedule.students.all()
@@ -823,14 +823,9 @@ def edit_student(request, id):
             'parents_phone': student.parents_phone,
             'email': student.email,
             'birthday': student.birthday,
-            'passport_number': student.passport_number,
-            'passport_authority': student.passport_authority,
-            'passport_issued_date': student.passport_issued_date,
-            'passport_unit': student.passport_unit,
             'level': student.level,
             'subjects': student.subjects.all(),
             'offices': student.offices.all(),
-            'olympiad_participation_plans': student.olympiad_participation_plans,
             'foreign_trip_plans': student.foreign_trip_plans,
             'registration_date': student.registration_date
         }
@@ -863,10 +858,10 @@ def student_registration(request, by_student=False):
         form.save()
         if by_student:
             form = None
-            user_message = 'Спасибо за регистрацию. Наш администратор свяжется с Вами в ближайшее время.'
+            user_message = 'Thank you for your registration. Our administrator will contact you soon.'
         else:
             form = StudentRegisterForm()
-            message = 'Ученик успешно добавлен'
+            message = 'Student has been successfully added'
     return {
         'form': form,
         'message': message,

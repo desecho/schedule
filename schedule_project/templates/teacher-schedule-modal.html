@@ -6,7 +6,7 @@
     <div ng-switch-when="edit">
       <form name="form" class="form-horizontal">
         <div class="control-group">
-          <label class="control-label" for="room_field">Кабинет</label>
+          <label class="control-label" for="room_field">Room</label>
           <div class="controls">
             <select ui-select2 ng-model="fields.room" id="room_field" required>
                 <option value=""></option>
@@ -15,7 +15,7 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="subject_field">Предмет</label>
+          <label class="control-label" for="subject_field">Subject</label>
           <div class="controls">
             <select ui-select2 ng-model="fields.subject" id="subject_field" ng-change="load_students()" required>
                 <option value=""></option>
@@ -24,7 +24,7 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="lesson_type_field">Тип урока</label>
+          <label class="control-label" for="lesson_type_field">Lesson Type</label>
           <div class="controls">
             <select ui-select2 ng-model="fields.lesson_type" id="lesson_type_field" required>
                 <option value=""></option>
@@ -33,7 +33,7 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="students_field">Ученики</label>
+          <label class="control-label" for="students_field">Students</label>
           <div class="controls">
             <select required ui-select2 multiple ng-model="fields.students" id="students_field" required>
                 <option ng-repeat="student in schedule_students" value="[[ student.id ]]">[[ student.name ]]</option>
@@ -42,31 +42,31 @@
         </div>
         <div class="control-group">
           <div class="controls">
-            <button ng-click="save()" ng-disabled="form.$invalid" class="btn btn-success"><i class="icon-save icon-white"></i> Сохранить</button>
+            <button ng-click="save()" ng-disabled="form.$invalid" class="btn btn-success"><i class="icon-save icon-white"></i> Save</button>
           </div>
         </div>
       </form>
     </div>
     <div ng-switch="free" ng-switch-when="view">
         <div ng-switch-when="false">
-            Кабинет - [[ room.name ]]<br>
-            Предмет - [[ subject.name ]]<br>
-            Тип урока - [[ lesson_type.name ]]<br>
-            Ученики:
+            Room - [[ room.name ]]<br>
+            Subject - [[ subject.name ]]<br>
+            Lesson Type - [[ lesson_type.name ]]<br>
+            Students:
             <ul>
                 <li ng-repeat="student in students">[[ student.name ]]</li>
             </ul>
         </div>
         <div ng-switch-when="true">
-            Время свободно.
+            Free.
         </div>
     </div>
   </div>
   <div class="modal-footer">
-    <button ng-click="demand_replacement()" class="btn btn-primary" ng-switch-when="view" ng-hide="free">Замена</button>
-    <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">В постоянное</button>
-    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view"><i class="icon-pencil icon-white"></i> Изменить</button>
-    <button ng-click="delete()" ng-hide="free" class="btn btn-danger"><i class="icon-trash icon-white"></i> Удалить</button>
-    <button ng-click="close()" class="btn btn-primary">Закрыть</button>
+    <button ng-click="demand_replacement()" class="btn btn-primary" ng-switch-when="view" ng-hide="free">Replacement</button>
+    <button ng-click="makeRegular()" class="btn btn-primary" ng-switch-when="view" ng-show="is_set_schedule_mode_and_not_empty()">Add as regular</button>
+    <button ng-click="edit()" class="btn btn-primary" ng-switch-when="view"><i class="icon-pencil icon-white"></i> Change</button>
+    <button ng-click="delete()" ng-hide="free" class="btn btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
+    <button ng-click="close()" class="btn btn-primary">Close</button>
   </div>
 </div>

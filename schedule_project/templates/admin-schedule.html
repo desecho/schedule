@@ -19,51 +19,51 @@
 {% block content %}
 <div ng-controller="ScheduleController">
 <div class="btn-group">
-  <button ng-click="enableSetSchedule()" ng:class="(schedule_mode === 0)? 'btn active' : 'btn'">Текущее</button>
-  <button ng-click="enableRegularSchedule()" ng:class="(schedule_mode == 1)? 'btn active' : 'btn'">Постоянное</button>
+  <button ng-click="enableSetSchedule()" ng:class="(schedule_mode === 0)? 'btn active' : 'btn'">Current</button>
+  <button ng-click="enableRegularSchedule()" ng:class="(schedule_mode == 1)? 'btn active' : 'btn'">Regular</button>
 </div>
 <div class="btn-group">
-  <a href="/admin-schedule/{{ start_dates.0|date:"d-m-Y" }}" class="btn" >На неделю назад</a>
-  <a href="/admin-schedule" class="btn" >На текущую неделю</a>
-  <a href="/admin-schedule/{{ start_dates.2|date:"d-m-Y" }}" class="btn">На неделю вперед</a>
+  <a href="/admin-schedule/{{ start_dates.0|date:"d-m-Y" }}" class="btn" >Previous week</a>
+  <a href="/admin-schedule" class="btn" >Current week</a>
+  <a href="/admin-schedule/{{ start_dates.2|date:"d-m-Y" }}" class="btn">Next week</a>
 </div>
 <br><br>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['teacher']" ng-change="update_filters()" data-placeholder="Учитель">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['teacher']" ng-change="update_filters()" data-placeholder="Teacher">
     <option value=""></option>
     <option ng-repeat="teacher in teachers" value="[[ teacher.id ]]">[[ teacher.name ]]</option>
 </select>
 
 <button data-ng-show="filters.teacher" ng-click="reset_filter('teacher')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['student']" ng-change="update_filters()" data-placeholder="Ученик">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['student']" ng-change="update_filters()" data-placeholder="Student">
     <option value=""></option>
     <option ng-repeat="student in students" value="[[ student.id ]]">[[ student.name ]]</option>
 </select>
 
 <button data-ng-show="filters.student" ng-click="reset_filter('student')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['subject']" ng-change="update_filters()" data-placeholder="Предмет">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['subject']" ng-change="update_filters()" data-placeholder="Subject">
     <option value=""></option>
     <option ng-repeat="subject in subjects" value="[[ subject.id ]]">[[ subject.name ]]</option>
 </select>
 
 <button data-ng-show="filters.subject" ng-click="reset_filter('subject')" class="btn">x</button>
 
-<select ui-select2="{placeholder: ' '}" ng-model="filters['lesson_type']" ng-change="update_filters()" data-placeholder="Тип урока">
+<select ui-select2="{placeholder: ' '}" ng-model="filters['lesson_type']" ng-change="update_filters()" data-placeholder="Lesson Type">
     <option value=""></option>
     <option ng-repeat="lesson_type in lesson_types" value="[[ lesson_type.id ]]">[[ lesson_type.name ]]</option>
 </select>
 
 <button data-ng-show="filters.lesson_type" ng-click="reset_filter('lesson_type')" class="btn">x</button>
 
-<button data-ng-show="(filters.teacher || filters.student || filters.subject || filters.lesson_type)" ng-click="reset_filter('all')" class="btn">Сбросить все</button>
+<button data-ng-show="(filters.teacher || filters.student || filters.subject || filters.lesson_type)" ng-click="reset_filter('all')" class="btn">Reset all</button>
 
 <br><br>
 
 <table class="table table-bordered schedule-table">
     <tr>
-        <td>Кабинет</td>
+        <td>Room</td>
         {% for date in dates %}
             <td>
                 {{ date }}<br>

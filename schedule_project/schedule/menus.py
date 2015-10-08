@@ -2,19 +2,19 @@
 from menu import Menu, MenuItem
 from django.core.urlresolvers import reverse
 
-Menu.add_item('teacher', MenuItem('Свободное время',
+Menu.add_item('teacher', MenuItem('Free Time',
     reverse('schedule.views.free_time'),
     weight=10,))
 
-Menu.add_item('teacher', MenuItem('Добавить ученика',
+Menu.add_item('teacher', MenuItem('Add student',
     reverse('schedule.views.add_student'),
     weight=20,))
 
-Menu.add_item('admin', MenuItem('Добавить ученика',
+Menu.add_item('admin', MenuItem('Add student',
     reverse('schedule.views.add_student'),
     weight=10,))
 
-Menu.add_item('admin', MenuItem('Администрировать учеников',
+Menu.add_item('admin', MenuItem('Administer students',
     reverse('schedule.views.edit_students'),
     weight=70,))
 

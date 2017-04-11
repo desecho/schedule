@@ -2,6 +2,7 @@
 schedule_project/static/admin/
 schedule_project/schedule_project/secret.py
 schedule_project/schedule_project/local_settings.py
+*DS_Store
 
 # C extensions
 *.so

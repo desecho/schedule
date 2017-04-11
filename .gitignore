@@ -1,7 +1,7 @@
 *.py[cod]
 schedule_project/static/admin/
-schedule_project/movies_project/secret.py
-schedule_project/movies_project/local_settings.py
+schedule_project/schedule_project/secret.py
+schedule_project/schedule_project/local_settings.py
 
 # C extensions
 *.so
